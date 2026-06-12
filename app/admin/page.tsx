@@ -13,7 +13,10 @@ interface Order {
   total_amount: number;
   payment_verified: boolean;
   collected: boolean;
+  collected_by: string | null;
+  collected_at: string | null;
   utr_number: string | null;
+  payment_screenshot_url: string | null;
   created_at: string;
   order_items?: any[];
 }
@@ -235,7 +238,7 @@ export default function AdminPage() {
     if (error) {
       alert('Error: ' + error.message);
     } else {
-      alert(`✅ Order ${orderIdString} marked as COLLECTED!`);
+      alert(`✅ Order ${orderIdString} marked as COLLECTED by ${volunteerName}!`);
       fetchDashboardStats();
       fetchAllOrders();
     }
@@ -275,7 +278,10 @@ export default function AdminPage() {
           total_shirts,
           payment_verified,
           utr_number,
+          payment_screenshot_url,
           collected,
+          collected_by,
+          collected_at,
           created_at,
           order_items (
             size,
@@ -294,7 +300,10 @@ export default function AdminPage() {
         'Total Amount': `₹${order.total_amount}`,
         'Payment Verified': order.payment_verified ? 'Yes' : 'No',
         'UTR Number': order.utr_number || '-',
+        'Screenshot Link': order.payment_screenshot_url || '-',
         'Collected': order.collected ? 'Yes' : 'No',
+        'Collected By': order.collected_by || '-',
+        'Collected At': order.collected_at ? new Date(order.collected_at).toLocaleString() : '-',
         'Items': order.order_items?.map((item: any) => `${item.size} x${item.quantity}`).join(', ') || '-',
         'Booking Date': new Date(order.created_at).toLocaleString('en-IN')
       }));
@@ -595,9 +604,34 @@ export default function AdminPage() {
                 
                 {/* UTR Number if available */}
                 {order.utr_number && (
-                  <div className="mb-4">
+                  <div className="mb-3">
                     <p className="text-xs text-gray-500">UTR Number</p>
                     <p className="text-sm font-mono bg-gray-50 px-2 py-1 rounded inline-block">{order.utr_number}</p>
+                  </div>
+                )}
+                
+                {/* Payment Screenshot Button */}
+                {order.payment_screenshot_url && (
+                  <div className="mb-3">
+                    <button
+                      onClick={() => window.open(order.payment_screenshot_url!, '_blank')}
+                      className="bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600 flex items-center gap-1"
+                    >
+                      📸 View Payment Screenshot
+                    </button>
+                  </div>
+                )}
+                
+                {/* Collected By Info (if collected) */}
+                {order.collected && order.collected_by && (
+                  <div className="mb-3 p-2 bg-green-50 rounded-lg">
+                    <p className="text-xs text-gray-500">Collected By</p>
+                    <p className="text-sm font-semibold text-green-700">{order.collected_by}</p>
+                    {order.collected_at && (
+                      <p className="text-xs text-gray-500 mt-1">
+                        {new Date(order.collected_at).toLocaleString()}
+                      </p>
+                    )}
                   </div>
                 )}
                 
@@ -621,12 +655,21 @@ export default function AdminPage() {
                 
                 {/* Action Buttons */}
                 <div className="flex gap-3">
-                  {!order.payment_verified && (
+                  {!order.payment_verified && order.payment_screenshot_url && (
                     <button
                       onClick={() => verifyPayment(order.id, order.order_id)}
                       className="bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-green-700"
                     >
                       ✅ Verify Payment
+                    </button>
+                  )}
+                  {!order.payment_verified && !order.payment_screenshot_url && (
+                    <button
+                      disabled
+                      className="bg-gray-400 text-white px-4 py-2 rounded-lg text-sm font-semibold cursor-not-allowed"
+                      title="No screenshot uploaded yet"
+                    >
+                      ⏳ Waiting for Screenshot
                     </button>
                   )}
                   {order.payment_verified && !order.collected && (
@@ -671,8 +714,11 @@ export default function AdminPage() {
             <li>Ask customer for Order ID or Mobile Number</li>
             <li>Search using the search box above</li>
             <li>Verify customer name and mobile number match</li>
-            <li>Check that payment is verified (green badge)</li>
+            <li>Click "View Payment Screenshot" to verify payment</li>
+            <li>Check UTR number matches the screenshot</li>
+            <li>Click "Verify Payment" after confirming payment</li>
             <li>Hand over the T-Shirts</li>
+            <li>Enter your name when prompted</li>
             <li>Click "Mark as Collected" button</li>
             <li className="font-bold">Once marked collected, it cannot be collected again</li>
           </ul>

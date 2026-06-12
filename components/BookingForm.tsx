@@ -16,6 +16,12 @@ export default function BookingForm() {
   const [customerName, setCustomerName] = useState('');
   const [mobileNumber, setMobileNumber] = useState('');
   
+  // Payment details state
+  const [utrNumber, setUtrNumber] = useState('');
+  const [paymentScreenshot, setPaymentScreenshot] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  
   // T-Shirt items state
   const [items, setItems] = useState<TShirtItem[]>([
     { id: 1, size: 'M', quantity: 1, pricePerPiece: 350 }
@@ -68,7 +74,6 @@ export default function BookingForm() {
   
   // Update item quantity - FIXED for mobile!
   const updateQuantity = (id: number, inputValue: string) => {
-    // Allow empty string for typing
     if (inputValue === '') {
       setItems(items.map(item => 
         item.id === id ? { ...item, quantity: 0 } : item
@@ -76,7 +81,6 @@ export default function BookingForm() {
       return;
     }
     
-    // Remove any non-digit characters
     const numericValue = inputValue.replace(/\D/g, '');
     
     if (numericValue === '') {
@@ -88,7 +92,6 @@ export default function BookingForm() {
     
     let quantity = parseInt(numericValue, 10);
     
-    // Don't exceed max
     if (quantity > 20) {
       quantity = 20;
     }
@@ -98,12 +101,10 @@ export default function BookingForm() {
     ));
   };
   
-  // Handle quantity change with proper mobile behavior
   const handleQuantityChange = (id: number, e: React.ChangeEvent<HTMLInputElement>) => {
     updateQuantity(id, e.target.value);
   };
   
-  // Handle quantity blur - set to 1 if 0 or empty
   const handleQuantityBlur = (id: number, currentQuantity: number) => {
     if (currentQuantity < 1 || isNaN(currentQuantity)) {
       setItems(items.map(item => 
@@ -112,9 +113,105 @@ export default function BookingForm() {
     }
   };
   
-  // Get display value for quantity input
   const getQuantityDisplay = (quantity: number) => {
     return quantity === 0 ? '' : quantity.toString();
+  };
+  
+  // Compress image before upload (reduces size by 70-80%)
+  const compressImage = async (file: File): Promise<File> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = (e) => {
+        const img = new Image();
+        img.src = e.target?.result as string;
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+          
+          // Max width 1200px (keeps readability)
+          if (width > 1200) {
+            height = (height * 1200) / width;
+            width = 1200;
+          }
+          
+          canvas.width = width;
+          canvas.height = height;
+          
+          const ctx = canvas.getContext('2d');
+          ctx?.drawImage(img, 0, 0, width, height);
+          
+          // Compress to JPEG at 70% quality
+          canvas.toBlob(
+            (blob) => {
+              if (blob) {
+                const compressedFile = new File([blob], file.name.replace(/\.(png|jpg|jpeg|heic)$/i, '.jpg'), {
+                  type: 'image/jpeg',
+                });
+                resolve(compressedFile);
+              } else {
+                reject(new Error('Compression failed'));
+              }
+            },
+            'image/jpeg',
+            0.7
+          );
+        };
+      };
+      reader.onerror = (error) => reject(error);
+    });
+  };
+  
+  // Handle file selection with compression
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    if (!file.type.startsWith('image/')) {
+      alert('Please upload only image files (JPG, PNG)');
+      return;
+    }
+    
+    if (file.size > 10 * 1024 * 1024) {
+      alert('File size should be less than 10MB');
+      return;
+    }
+    
+    setUploading(true);
+    try {
+      const compressedFile = await compressImage(file);
+      setPaymentScreenshot(compressedFile);
+      setPreviewUrl(URL.createObjectURL(compressedFile));
+    } catch (error) {
+      alert('Failed to compress image. Please try again.');
+    } finally {
+      setUploading(false);
+    }
+  };
+  
+  // Upload screenshot to Supabase Storage
+  const uploadScreenshot = async (orderId: string): Promise<string | null> => {
+    if (!paymentScreenshot) return null;
+    
+    const fileExt = paymentScreenshot.name.split('.').pop();
+    const fileName = `${orderId}-${Date.now()}.jpg`;
+    const filePath = fileName;
+    
+    const { error: uploadError } = await supabase.storage
+      .from('payment-screenshots')
+      .upload(filePath, paymentScreenshot);
+    
+    if (uploadError) {
+      console.error('Upload error:', uploadError);
+      return null;
+    }
+    
+    const { data: { publicUrl } } = supabase.storage
+      .from('payment-screenshots')
+      .getPublicUrl(filePath);
+    
+    return publicUrl;
   };
   
   // Form validation
@@ -122,15 +219,15 @@ export default function BookingForm() {
     if (!customerName.trim()) return false;
     if (!mobileNumber.trim() || mobileNumber.length !== 10 || !/^\d+$/.test(mobileNumber)) return false;
     if (items.length === 0) return false;
-    // Check if any item has quantity 0
     if (items.some(item => item.quantity < 1)) return false;
+    if (!utrNumber.trim() || utrNumber.length < 6) return false;
+    if (!paymentScreenshot) return false;
     return true;
   };
   
-  // Save to Supabase (database auto-generates Order ID)
-  const saveToSupabase = async () => {
+  // Save to Supabase with payment details
+  const saveToSupabase = async (screenshotUrl: string | null) => {
     try {
-      // 1. Insert into orders table (order_id will be auto-generated by database)
       const { data: orderData, error: orderError } = await supabase
         .from('orders')
         .insert({
@@ -138,6 +235,8 @@ export default function BookingForm() {
           mobile_number: mobileNumber,
           total_amount: calculateTotal(),
           total_shirts: calculateTotalShirts(),
+          utr_number: utrNumber,
+          payment_screenshot_url: screenshotUrl,
           payment_verified: false,
           collected: false,
           created_at: new Date().toISOString()
@@ -147,7 +246,6 @@ export default function BookingForm() {
       
       if (orderError) throw orderError;
       
-      // 2. Insert each T-Shirt into order_items table
       const orderItems = items.map(item => ({
         order_id: orderData.id,
         size: item.size,
@@ -175,17 +273,33 @@ export default function BookingForm() {
     e.preventDefault();
     
     if (!isFormValid()) {
-      alert('कृपया सर्व माहिती योग्यरित्या भरा');
+      let errorMsg = 'Please fill all required fields:\n';
+      if (!customerName.trim()) errorMsg += '- Name\n';
+      if (!mobileNumber.trim() || mobileNumber.length !== 10) errorMsg += '- Valid Mobile Number (10 digits)\n';
+      if (!utrNumber.trim()) errorMsg += '- UTR Number\n';
+      if (!paymentScreenshot) errorMsg += '- Payment Screenshot\n';
+      alert(errorMsg);
       return;
     }
     
     setIsSubmitting(true);
     setSubmitMessage(null);
     
-    // Save to Supabase (Order ID auto-generated)
-    const result = await saveToSupabase();
+    // First save order without screenshot URL
+    const result = await saveToSupabase(null);
     
     if (result.success) {
+      // Upload screenshot with Order ID
+      const screenshotUrl = await uploadScreenshot(result.orderData.order_id);
+      
+      // Update order with screenshot URL
+      if (screenshotUrl) {
+        await supabase
+          .from('orders')
+          .update({ payment_screenshot_url: screenshotUrl })
+          .eq('id', result.orderData.id);
+      }
+      
       // Prepare order data for success page
       const orderDataForPage = {
         order_id: result.orderData.order_id,
@@ -193,6 +307,7 @@ export default function BookingForm() {
         mobile_number: mobileNumber,
         total_amount: calculateTotal(),
         total_shirts: calculateTotalShirts(),
+        utr_number: utrNumber,
         created_at: new Date().toISOString(),
         items: items.map(item => ({
           size: item.size,
@@ -202,19 +317,16 @@ export default function BookingForm() {
         }))
       };
       
-      // Navigate to success page with order data
       const encodedData = encodeURIComponent(JSON.stringify(orderDataForPage));
       window.location.href = `/success?data=${encodedData}`;
       
     } else {
-      // Show error message
       setSubmitMessage({
         type: 'error',
-        text: `❌ बुकिंग अयशस्वी: ${result.error}\nकृपया पुन्हा प्रयत्न करा किंवा प्रशासकाशी संपर्क साधा.`
+        text: `❌ Booking failed: ${result.error}\nPlease try again or contact support.`
       });
       setIsSubmitting(false);
       
-      // Auto-hide message after 10 seconds
       setTimeout(() => {
         setSubmitMessage(null);
       }, 10000);
@@ -247,22 +359,22 @@ export default function BookingForm() {
           
           {/* Customer Details Section */}
           <div className="bg-gray-50 rounded-xl p-6 shadow-sm">
-            <h3 className="text-xl font-bold text-gray-800 mb-4 marathi-text">
-              ग्राहक माहिती
+            <h3 className="text-xl font-bold text-gray-800 mb-4">
+              Customer Details
             </h3>
             
             <div className="space-y-4">
               {/* Name */}
               <div>
                 <label className="block text-gray-700 font-semibold mb-2">
-                  पूर्ण नाव <span className="text-red-500">*</span>
+                  Full Name <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   value={customerName}
                   onChange={(e) => setCustomerName(e.target.value)}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                  placeholder="उदा. प्रथम पाटील"
+                  placeholder="e.g., Pratham Patil"
                   disabled={isSubmitting}
                 />
               </div>
@@ -270,7 +382,7 @@ export default function BookingForm() {
               {/* Mobile Number */}
               <div>
                 <label className="block text-gray-700 font-semibold mb-2">
-                  मोबाईल नंबर <span className="text-red-500">*</span>
+                  Mobile Number <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="tel"
@@ -282,27 +394,95 @@ export default function BookingForm() {
                   disabled={isSubmitting}
                 />
                 {mobileNumber && mobileNumber.length !== 10 && (
-                  <p className="text-red-500 text-sm mt-1">कृपया 10 अंकी मोबाईल नंबर टाका</p>
+                  <p className="text-red-500 text-sm mt-1">Please enter 10 digit mobile number</p>
                 )}
               </div>
             </div>
           </div>
           
+          {/* Payment Section */}
+          <div className="bg-gray-50 rounded-xl p-6 shadow-sm">
+            <h3 className="text-xl font-bold text-gray-800 mb-4">
+              Payment Details
+            </h3>
+            
+            {/* QR Code Section */}
+            <div className="bg-white rounded-lg p-4 mb-4 text-center">
+              <p className="text-sm font-semibold text-gray-700 mb-2">
+                Scan QR Code to Pay
+              </p>
+              <div className="flex justify-center">
+                <img 
+                  src="/images/upi-qr-code.png" 
+                  alt="UPI QR Code for Payment"
+                  className="w-48 h-48 object-contain"
+                  onError={(e) => {
+                    e.currentTarget.src = 'https://placehold.co/200x200?text=QR+Code+Here';
+                  }}
+                />
+              </div>
+              <p className="text-xs text-gray-500 mt-2">Google Pay / PhonePe / Any UPI App</p>
+            </div>
+            
+            {/* UTR Number */}
+            <div className="mb-4">
+              <label className="block text-gray-700 font-semibold mb-2">
+                UTR Number <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={utrNumber}
+                onChange={(e) => setUtrNumber(e.target.value.toUpperCase())}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                placeholder="Enter UTR number from your payment"
+                disabled={isSubmitting}
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                UTR number is shown in your bank statement after payment
+              </p>
+            </div>
+            
+            {/* Screenshot Upload */}
+            <div className="mb-4">
+              <label className="block text-gray-700 font-semibold mb-2">
+                Payment Screenshot <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleFileSelect}
+                disabled={isSubmitting || uploading}
+                className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Upload screenshot showing UTR number and amount (Max 10MB)
+              </p>
+              {uploading && <p className="text-blue-500 text-sm mt-1">Compressing image...</p>}
+            </div>
+            
+            {/* Preview */}
+            {previewUrl && (
+              <div className="mt-3">
+                <p className="text-sm text-gray-600 mb-1">Preview:</p>
+                <img src={previewUrl} alt="Preview" className="h-32 rounded-lg border" />
+              </div>
+            )}
+          </div>
+          
           {/* T-Shirt Selection Section */}
           <div className="bg-gray-50 rounded-xl p-6 shadow-sm">
-            <h3 className="text-xl font-bold text-gray-800 mb-4 marathi-text">
-              टी-शर्ट तपशील
+            <h3 className="text-xl font-bold text-gray-800 mb-4">
+              T-Shirt Details
             </h3>
             
             <div className="space-y-4">
-              {/* T-Shirt Rows */}
               {items.map((item) => (
                 <div key={item.id} className="bg-white rounded-lg p-4 border border-gray-200">
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
                     {/* Size Selection */}
                     <div>
                       <label className="block text-gray-600 text-sm font-semibold mb-1">
-                        साईज
+                        Size
                       </label>
                       <select
                         value={item.size}
@@ -310,12 +490,12 @@ export default function BookingForm() {
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
                         disabled={isSubmitting}
                       >
-                        <optgroup label="प्रौढ साईज">
+                        <optgroup label="Adult Sizes">
                           {availableSizes.map(size => (
                             <option key={size} value={size}>{size}</option>
                           ))}
                         </optgroup>
-                        <optgroup label="बाल साईज">
+                        <optgroup label="Children Sizes">
                           {childSizes.map(size => (
                             <option key={size} value={size}>{size}</option>
                           ))}
@@ -323,10 +503,10 @@ export default function BookingForm() {
                       </select>
                     </div>
                     
-                    {/* Quantity - FIXED for mobile! */}
+                    {/* Quantity */}
                     <div>
                       <label className="block text-gray-600 text-sm font-semibold mb-1">
-                        संख्या
+                        Quantity
                       </label>
                       <input
                         type="text"
@@ -339,13 +519,13 @@ export default function BookingForm() {
                         placeholder="1"
                         disabled={isSubmitting}
                       />
-                      <p className="text-xs text-gray-400 mt-1">(1 ते 20)</p>
+                      <p className="text-xs text-gray-400 mt-1">(1 to 20)</p>
                     </div>
                     
                     {/* Price per piece */}
                     <div>
                       <label className="block text-gray-600 text-sm font-semibold mb-1">
-                        प्रति टी-शर्ट किंमत
+                        Price per piece
                       </label>
                       <div className="w-full px-3 py-2 bg-gray-100 rounded-lg text-gray-700">
                         ₹ {item.pricePerPiece}
@@ -356,7 +536,7 @@ export default function BookingForm() {
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex-1">
                         <label className="block text-gray-600 text-sm font-semibold mb-1">
-                          एकूण
+                          Subtotal
                         </label>
                         <div className="w-full px-3 py-2 bg-orange-50 rounded-lg text-orange-700 font-bold">
                           ₹ {item.quantity * item.pricePerPiece}
@@ -375,14 +555,13 @@ export default function BookingForm() {
                 </div>
               ))}
               
-              {/* Add More Button */}
               <button
                 type="button"
                 onClick={addTShirt}
                 className="w-full py-3 border-2 border-dashed border-orange-300 rounded-lg text-orange-600 font-semibold hover:bg-orange-50 transition-colors"
                 disabled={isSubmitting}
               >
-                + दुसरी टी-शर्ट भरा
+                + Add Another T-Shirt
               </button>
             </div>
           </div>
@@ -391,13 +570,13 @@ export default function BookingForm() {
           <div className="bg-gradient-to-r from-orange-50 to-red-50 rounded-xl p-6 shadow-md">
             <div className="flex flex-col md:flex-row justify-between items-center gap-4">
               <div>
-                <p className="text-gray-600 text-sm">एकूण टी-शर्ट</p>
+                <p className="text-gray-600 text-sm">Total T-Shirts</p>
                 <p className="text-2xl font-bold text-gray-800">
-                  {items.reduce((sum, item) => sum + item.quantity, 0)} टी-शर्ट
+                  {items.reduce((sum, item) => sum + item.quantity, 0)} T-Shirts
                 </p>
               </div>
               <div className="text-center md:text-right">
-                <p className="text-gray-600 text-sm">एकूण देय रक्कम</p>
+                <p className="text-gray-600 text-sm">Total Amount to Pay</p>
                 <p className="text-4xl font-bold text-orange-600">
                   ₹ {calculateTotal()}
                 </p>
@@ -415,11 +594,11 @@ export default function BookingForm() {
                 : 'bg-gradient-to-r from-orange-600 to-red-600 text-white hover:shadow-lg transform hover:scale-[1.02] cursor-pointer'
             }`}
           >
-            {isSubmitting ? 'बुकिंग होत आहे...' : 'बुकिंग सबमिट करा 📝'}
+            {isSubmitting ? 'Submitting Booking...' : 'Complete Booking & Submit 📝'}
           </button>
           
           <p className="text-center text-sm text-gray-500">
-            * सबमिट केल्यानंतर तुम्हाला Order ID मिळेल. कृपया तो नोंदवून ठेवा.
+            * After submission, you will receive an Order ID. Please save it for collection.
           </p>
         </form>
       </div>
