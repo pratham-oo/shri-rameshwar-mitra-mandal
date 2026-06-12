@@ -5,6 +5,16 @@ import { useState } from 'react';
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState<boolean>(false);
 
+  const scrollToBooking = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    e.preventDefault();
+    const bookingSection = document.getElementById('booking-form');
+    if (bookingSection) {
+      bookingSection.scrollIntoView({ behavior: 'smooth' });
+    }
+    // Close mobile menu if open
+    setIsMenuOpen(false);
+  };
+
   return (
     <header className="bg-gradient-to-r from-orange-600 to-red-600 text-white shadow-lg">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -30,18 +40,25 @@ export default function Header() {
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex space-x-6">
-            <a href="/" className="hover:text-orange-200 transition-colors">
+            <a 
+              href="/" 
+              className="hover:text-orange-200 transition-colors"
+            >
               मुख्यपृष्ठ
             </a>
-            <a href="/booking" className="hover:text-orange-200 transition-colors">
+            <a 
+              href="#booking-form" 
+              onClick={scrollToBooking}
+              className="hover:text-orange-200 transition-colors"
+            >
               बुकिंग
             </a>
-            <a href="/admin" className="hover:text-orange-200 transition-colors">
+            <a 
+              href="/admin" 
+              className="hover:text-orange-200 transition-colors"
+            >
               प्रशासन
             </a>
-            <a href="/admin" className="hover:text-orange-200 transition-colors">
-  प्रशासन
-</a>
           </nav>
 
           {/* Mobile Menu Button */}
@@ -64,13 +81,25 @@ export default function Header() {
         {isMenuOpen && (
           <div className="md:hidden py-4 border-t border-orange-500">
             <nav className="flex flex-col space-y-3">
-              <a href="/" className="hover:text-orange-200 transition-colors py-2">
+              <a 
+                href="/" 
+                className="hover:text-orange-200 transition-colors py-2"
+                onClick={() => setIsMenuOpen(false)}
+              >
                 मुख्यपृष्ठ
               </a>
-              <a href="/booking" className="hover:text-orange-200 transition-colors py-2">
+              <a 
+                href="#booking-form" 
+                onClick={scrollToBooking}
+                className="hover:text-orange-200 transition-colors py-2"
+              >
                 बुकिंग
               </a>
-              <a href="/admin" className="hover:text-orange-200 transition-colors py-2">
+              <a 
+                href="/admin" 
+                className="hover:text-orange-200 transition-colors py-2"
+                onClick={() => setIsMenuOpen(false)}
+              >
                 प्रशासन
               </a>
             </nav>
