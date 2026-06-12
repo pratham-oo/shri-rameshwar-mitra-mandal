@@ -59,7 +59,7 @@ export default function BookingForm() {
   // Remove T-Shirt row
   const removeTShirt = (id: number) => {
     if (items.length === 1) {
-      alert('किमान एक टी-शर्ट बुक करणे आवश्यक आहे');
+      alert('At least one T-Shirt is required');
       return;
     }
     setItems(items.filter(item => item.id !== id));
@@ -72,7 +72,7 @@ export default function BookingForm() {
     ));
   };
   
-  // Update item quantity - FIXED for mobile!
+  // Update item quantity
   const updateQuantity = (id: number, inputValue: string) => {
     if (inputValue === '') {
       setItems(items.map(item => 
@@ -92,9 +92,8 @@ export default function BookingForm() {
     
     let quantity = parseInt(numericValue, 10);
     
-    if (quantity > 20) {
-      quantity = 20;
-    }
+    if (quantity > 20) quantity = 20;
+    if (quantity < 1) quantity = 1;
     
     setItems(items.map(item => 
       item.id === id ? { ...item, quantity: quantity } : item
@@ -117,7 +116,7 @@ export default function BookingForm() {
     return quantity === 0 ? '' : quantity.toString();
   };
   
-  // Compress image before upload (reduces size by 70-80%)
+  // Compress image before upload
   const compressImage = async (file: File): Promise<File> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -130,7 +129,6 @@ export default function BookingForm() {
           let width = img.width;
           let height = img.height;
           
-          // Max width 1200px (keeps readability)
           if (width > 1200) {
             height = (height * 1200) / width;
             width = 1200;
@@ -142,7 +140,6 @@ export default function BookingForm() {
           const ctx = canvas.getContext('2d');
           ctx?.drawImage(img, 0, 0, width, height);
           
-          // Compress to JPEG at 70% quality
           canvas.toBlob(
             (blob) => {
               if (blob) {
@@ -163,7 +160,7 @@ export default function BookingForm() {
     });
   };
   
-  // Handle file selection with compression
+  // Handle file selection
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -225,7 +222,7 @@ export default function BookingForm() {
     return true;
   };
   
-  // Save to Supabase with payment details
+  // Save to Supabase
   const saveToSupabase = async (screenshotUrl: string | null) => {
     try {
       const { data: orderData, error: orderError } = await supabase
@@ -285,14 +282,11 @@ export default function BookingForm() {
     setIsSubmitting(true);
     setSubmitMessage(null);
     
-    // First save order without screenshot URL
     const result = await saveToSupabase(null);
     
     if (result.success) {
-      // Upload screenshot with Order ID
       const screenshotUrl = await uploadScreenshot(result.orderData.order_id);
       
-      // Update order with screenshot URL
       if (screenshotUrl) {
         await supabase
           .from('orders')
@@ -300,7 +294,6 @@ export default function BookingForm() {
           .eq('id', result.orderData.id);
       }
       
-      // Prepare order data for success page
       const orderDataForPage = {
         order_id: result.orderData.order_id,
         customer_name: customerName.trim(),
@@ -323,7 +316,7 @@ export default function BookingForm() {
     } else {
       setSubmitMessage({
         type: 'error',
-        text: `❌ Booking failed: ${result.error}\nPlease try again or contact support.`
+        text: `❌ Booking failed: ${result.error}\nPlease try again.`
       });
       setIsSubmitting(false);
       
@@ -340,10 +333,10 @@ export default function BookingForm() {
         {/* Section Header */}
         <div className="text-center mb-10">
           <h2 className="text-3xl md:text-4xl font-bold text-gray-800 mb-3">
-            <span className="marathi-text">टी-शर्ट बुकिंग फॉर्म</span>
+            T-Shirt Booking Form
           </h2>
           <p className="text-gray-600 text-lg">
-            कृपया खालील माहिती भरा
+            Please fill in the details below
           </p>
           <div className="w-24 h-1 bg-gradient-to-r from-orange-500 to-red-500 mx-auto mt-4 rounded-full"></div>
         </div>
@@ -351,7 +344,7 @@ export default function BookingForm() {
         {/* Error Message */}
         {submitMessage && submitMessage.type === 'error' && (
           <div className="mb-6 p-4 rounded-lg bg-red-50 border border-red-500 text-red-700">
-            <pre className="whitespace-pre-wrap text-sm font-sans">{submitMessage.text}</pre>
+            <p className="text-sm">{submitMessage.text}</p>
           </div>
         )}
         
@@ -373,8 +366,8 @@ export default function BookingForm() {
                   type="text"
                   value={customerName}
                   onChange={(e) => setCustomerName(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                  placeholder="e.g., Pratham Patil"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                  placeholder="Enter your full name"
                   disabled={isSubmitting}
                 />
               </div>
@@ -388,7 +381,7 @@ export default function BookingForm() {
                   type="tel"
                   value={mobileNumber}
                   onChange={(e) => setMobileNumber(e.target.value.replace(/\D/g, '').slice(0, 10))}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
                   placeholder="9876543210"
                   maxLength={10}
                   disabled={isSubmitting}
@@ -407,35 +400,20 @@ export default function BookingForm() {
             </h3>
             
             {/* QR Code Section */}
-<div className="bg-white rounded-lg p-4 mb-4 text-center">
-  <p className="text-sm font-semibold text-gray-700 mb-2">
-    Scan QR Code to Pay
-  </p>
-  <div className="flex justify-center">
-    <img 
-      src="/images/qr.png" 
-      alt="UPI QR Code for Payment"
-      className="w-48 h-48 object-contain"
-      onError={(e) => {
-        // Show a nice fallback instead of external URL
-        const target = e.currentTarget;
-        target.style.display = 'none';
-        const parent = target.parentElement;
-        if (parent) {
-          const fallback = document.createElement('div');
-          fallback.className = 'w-48 h-48 bg-gray-100 rounded-lg flex flex-col items-center justify-center border-2 border-dashed border-gray-300';
-          fallback.innerHTML = `
-            <span class="text-4xl mb-2">📱</span>
-            <span class="text-xs text-gray-600 text-center px-4">UPI ID: mandal@bankname</span>
-            <span class="text-xs text-gray-500 mt-2">Contact mandal for QR code</span>
-          `;
-          parent.appendChild(fallback);
-        }
-      }}
-    />
-  </div>
-  <p className="text-xs text-gray-500 mt-2">Google Pay / PhonePe / Any UPI App</p>
-</div>            
+            <div className="bg-white rounded-lg p-4 mb-4 text-center">
+              <p className="text-sm font-semibold text-gray-700 mb-2">
+                Scan QR Code to Pay
+              </p>
+              <div className="flex justify-center">
+                <img 
+                  src="/images/qr.png" 
+                  alt="UPI QR Code for Payment"
+                  className="w-48 h-48 object-contain"
+                />
+              </div>
+              <p className="text-xs text-gray-500 mt-2">Google Pay / PhonePe / Any UPI App</p>
+            </div>
+            
             {/* UTR Number */}
             <div className="mb-4">
               <label className="block text-gray-700 font-semibold mb-2">
@@ -467,7 +445,7 @@ export default function BookingForm() {
                 className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100"
               />
               <p className="text-xs text-gray-500 mt-1">
-                Upload screenshot showing UTR number and amount (Max 10MB)
+                Upload screenshot showing UTR number and amount
               </p>
               {uploading && <p className="text-blue-500 text-sm mt-1">Compressing image...</p>}
             </div>
