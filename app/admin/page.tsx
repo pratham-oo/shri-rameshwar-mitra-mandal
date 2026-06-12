@@ -1,7 +1,8 @@
 'use client';
 
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import { useState } from 'react';
 
 interface Order {
   id: number;
@@ -18,12 +19,41 @@ interface Order {
 }
 
 export default function AdminPage() {
+  const router = useRouter();
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [checking, setChecking] = useState(true);
+  
   const [searchTerm, setSearchTerm] = useState('');
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [verifying, setVerifying] = useState(false);
   const [exporting, setExporting] = useState(false);
+
+  // Check authentication on mount
+  useEffect(() => {
+    const checkAuth = () => {
+      const cookies = document.cookie.split(';');
+      const hasAdminAuth = cookies.some(cookie => 
+        cookie.trim().startsWith('admin_auth=true')
+      );
+      
+      if (!hasAdminAuth) {
+        router.push('/admin/login');
+      } else {
+        setIsAuthenticated(true);
+      }
+      setChecking(false);
+    };
+    
+    checkAuth();
+  }, [router]);
+
+  // Handle logout
+  const handleLogout = () => {
+    document.cookie = 'admin_auth=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+    router.push('/admin/login');
+  };
 
   const searchOrders = async () => {
     if (!searchTerm.trim()) return;
@@ -174,16 +204,41 @@ export default function AdminPage() {
     setExporting(false);
   };
 
+  // Show loading while checking authentication
+  if (checking) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Verifying access...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't render anything if not authenticated (will redirect)
+  if (!isAuthenticated) {
+    return null;
+  }
+
   return (
     <div className="min-h-screen bg-gray-100 py-8 px-4">
       <div className="max-w-6xl mx-auto">
         
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-orange-800 marathi-text">
-            प्रशासन पॅनेल
-          </h1>
-          <p className="text-gray-600">वितरण दिनी ऑर्डर शोधा आणि सत्यापित करा</p>
+        {/* Header with Logout Button */}
+        <div className="flex justify-between items-center mb-6">
+          <div>
+            <h1 className="text-3xl font-bold text-orange-800 marathi-text">
+              प्रशासन पॅनेल
+            </h1>
+            <p className="text-gray-600">वितरण दिनी ऑर्डर शोधा आणि सत्यापित करा</p>
+          </div>
+          <button
+            onClick={handleLogout}
+            className="bg-red-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-red-700 transition-all flex items-center gap-2"
+          >
+            🚪 लॉगआउट
+          </button>
         </div>
         
         {/* Admin Actions Bar */}
