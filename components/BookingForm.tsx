@@ -67,24 +67,31 @@ export default function BookingForm() {
   };
   
   // Update item quantity - FIXED for mobile!
-  const updateQuantity = (id: number, value: string) => {
-    // Remove any non-digit characters
-    let cleanValue = value.replace(/\D/g, '');
-    
-    // Handle empty input
-    if (cleanValue === '') {
+  const updateQuantity = (id: number, inputValue: string) => {
+    // Allow empty string for typing
+    if (inputValue === '') {
       setItems(items.map(item => 
-        item.id === id ? { ...item, quantity: 1 } : item
+        item.id === id ? { ...item, quantity: 0 } : item
       ));
       return;
     }
     
-    // Convert to number
-    let quantity = parseInt(cleanValue, 10);
+    // Remove any non-digit characters
+    const numericValue = inputValue.replace(/\D/g, '');
     
-    // Apply limits
-    if (isNaN(quantity) || quantity < 1) quantity = 1;
-    if (quantity > 20) quantity = 20;
+    if (numericValue === '') {
+      setItems(items.map(item => 
+        item.id === id ? { ...item, quantity: 0 } : item
+      ));
+      return;
+    }
+    
+    let quantity = parseInt(numericValue, 10);
+    
+    // Don't exceed max
+    if (quantity > 20) {
+      quantity = 20;
+    }
     
     setItems(items.map(item => 
       item.id === id ? { ...item, quantity: quantity } : item
@@ -96,7 +103,7 @@ export default function BookingForm() {
     updateQuantity(id, e.target.value);
   };
   
-  // Handle quantity blur - ensure valid number
+  // Handle quantity blur - set to 1 if 0 or empty
   const handleQuantityBlur = (id: number, currentQuantity: number) => {
     if (currentQuantity < 1 || isNaN(currentQuantity)) {
       setItems(items.map(item => 
@@ -105,11 +112,18 @@ export default function BookingForm() {
     }
   };
   
+  // Get display value for quantity input
+  const getQuantityDisplay = (quantity: number) => {
+    return quantity === 0 ? '' : quantity.toString();
+  };
+  
   // Form validation
   const isFormValid = () => {
     if (!customerName.trim()) return false;
     if (!mobileNumber.trim() || mobileNumber.length !== 10 || !/^\d+$/.test(mobileNumber)) return false;
     if (items.length === 0) return false;
+    // Check if any item has quantity 0
+    if (items.some(item => item.quantity < 1)) return false;
     return true;
   };
   
@@ -309,24 +323,23 @@ export default function BookingForm() {
                       </select>
                     </div>
                     
-                    {/* Quantity - FIXED for mobile */}
+                    {/* Quantity - FIXED for mobile! */}
                     <div>
                       <label className="block text-gray-600 text-sm font-semibold mb-1">
                         संख्या
                       </label>
                       <input
-                        type="number"
+                        type="text"
                         inputMode="numeric"
                         pattern="[0-9]*"
-                        value={item.quantity}
+                        value={getQuantityDisplay(item.quantity)}
                         onChange={(e) => handleQuantityChange(item.id, e)}
                         onBlur={() => handleQuantityBlur(item.id, item.quantity)}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
-                        min="1"
-                        max="20"
-                        step="1"
+                        placeholder="1"
                         disabled={isSubmitting}
                       />
+                      <p className="text-xs text-gray-400 mt-1">(1 ते 20)</p>
                     </div>
                     
                     {/* Price per piece */}
