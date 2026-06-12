@@ -66,13 +66,43 @@ export default function BookingForm() {
     ));
   };
   
-  // Update item quantity
-  const updateQuantity = (id: number, quantity: number) => {
-    if (quantity < 1) quantity = 1;
+  // Update item quantity - FIXED for mobile!
+  const updateQuantity = (id: number, value: string) => {
+    // Remove any non-digit characters
+    let cleanValue = value.replace(/\D/g, '');
+    
+    // Handle empty input
+    if (cleanValue === '') {
+      setItems(items.map(item => 
+        item.id === id ? { ...item, quantity: 1 } : item
+      ));
+      return;
+    }
+    
+    // Convert to number
+    let quantity = parseInt(cleanValue, 10);
+    
+    // Apply limits
+    if (isNaN(quantity) || quantity < 1) quantity = 1;
     if (quantity > 20) quantity = 20;
+    
     setItems(items.map(item => 
       item.id === id ? { ...item, quantity: quantity } : item
     ));
+  };
+  
+  // Handle quantity change with proper mobile behavior
+  const handleQuantityChange = (id: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    updateQuantity(id, e.target.value);
+  };
+  
+  // Handle quantity blur - ensure valid number
+  const handleQuantityBlur = (id: number, currentQuantity: number) => {
+    if (currentQuantity < 1 || isNaN(currentQuantity)) {
+      setItems(items.map(item => 
+        item.id === id ? { ...item, quantity: 1 } : item
+      ));
+    }
   };
   
   // Form validation
@@ -279,18 +309,22 @@ export default function BookingForm() {
                       </select>
                     </div>
                     
-                    {/* Quantity */}
+                    {/* Quantity - FIXED for mobile */}
                     <div>
                       <label className="block text-gray-600 text-sm font-semibold mb-1">
                         संख्या
                       </label>
                       <input
                         type="number"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
                         value={item.quantity}
-                        onChange={(e) => updateQuantity(item.id, parseInt(e.target.value) || 1)}
+                        onChange={(e) => handleQuantityChange(item.id, e)}
+                        onBlur={() => handleQuantityBlur(item.id, item.quantity)}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
                         min="1"
                         max="20"
+                        step="1"
                         disabled={isSubmitting}
                       />
                     </div>
@@ -378,4 +412,4 @@ export default function BookingForm() {
       </div>
     </section>
   );
-} 
+}
