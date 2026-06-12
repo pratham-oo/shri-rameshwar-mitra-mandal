@@ -407,23 +407,35 @@ export default function BookingForm() {
             </h3>
             
             {/* QR Code Section */}
-            <div className="bg-white rounded-lg p-4 mb-4 text-center">
-              <p className="text-sm font-semibold text-gray-700 mb-2">
-                Scan QR Code to Pay
-              </p>
-              <div className="flex justify-center">
-                <img 
-                  src="/images/upi-qr-code.png" 
-                  alt="UPI QR Code for Payment"
-                  className="w-48 h-48 object-contain"
-                  onError={(e) => {
-                    e.currentTarget.src = 'https://placehold.co/200x200?text=QR+Code+Here';
-                  }}
-                />
-              </div>
-              <p className="text-xs text-gray-500 mt-2">Google Pay / PhonePe / Any UPI App</p>
-            </div>
-            
+<div className="bg-white rounded-lg p-4 mb-4 text-center">
+  <p className="text-sm font-semibold text-gray-700 mb-2">
+    Scan QR Code to Pay
+  </p>
+  <div className="flex justify-center">
+    <img 
+      src="/images/qr.png" 
+      alt="UPI QR Code for Payment"
+      className="w-48 h-48 object-contain"
+      onError={(e) => {
+        // Show a nice fallback instead of external URL
+        const target = e.currentTarget;
+        target.style.display = 'none';
+        const parent = target.parentElement;
+        if (parent) {
+          const fallback = document.createElement('div');
+          fallback.className = 'w-48 h-48 bg-gray-100 rounded-lg flex flex-col items-center justify-center border-2 border-dashed border-gray-300';
+          fallback.innerHTML = `
+            <span class="text-4xl mb-2">📱</span>
+            <span class="text-xs text-gray-600 text-center px-4">UPI ID: mandal@bankname</span>
+            <span class="text-xs text-gray-500 mt-2">Contact mandal for QR code</span>
+          `;
+          parent.appendChild(fallback);
+        }
+      }}
+    />
+  </div>
+  <p className="text-xs text-gray-500 mt-2">Google Pay / PhonePe / Any UPI App</p>
+</div>            
             {/* UTR Number */}
             <div className="mb-4">
               <label className="block text-gray-700 font-semibold mb-2">
