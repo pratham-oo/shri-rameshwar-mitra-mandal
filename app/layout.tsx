@@ -15,8 +15,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="mr">
-      <body className="overflow-x-hidden bg-white">
+<html lang="mr" data-scroll-behavior="smooth">
+        <body className="overflow-x-hidden bg-white">
 
         {/* Top Ganpati Decoration */}
         <GanpatiDecoration position="top" />
