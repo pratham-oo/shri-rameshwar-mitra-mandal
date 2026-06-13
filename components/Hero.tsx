@@ -29,37 +29,32 @@ export default function Hero() {
             </div>
             
             {/* Main Heading */}
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-4">
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-2">
               <span className="marathi-text text-orange-800">
                 श्री रामेश्वर मित्र मंडळ
               </span>
-              <br />
-              <span className="text-gray-800 text-3xl md:text-4xl lg:text-5xl">
-                T-Shirt Booking 2026
-              </span>
             </h1>
             
-            {/* Description */}
-            <p className="text-gray-600 text-lg md:text-xl mb-6 max-w-2xl mx-auto md:mx-0">
-              गणेशोत्सवाच्या शुभ उत्सवासाठी खास डिझाइन केलेली टी-शर्ट बुक करा. 
-              दर्जेदार कापसाची टी-शर्ट, कमी किमतीत.
+            {/* Subtitle - Malad cha Morya */}
+            <p className="marathi-text text-xl md:text-2xl text-orange-600 font-semibold mb-1">
+              मालाडचा मोरया
             </p>
             
-            {/* Key Features List */}
-            <div className="space-y-3 mb-8 max-w-md mx-auto md:mx-0">
-              <div className="flex items-center gap-3 justify-center md:justify-start">
-                <span className="text-green-600 text-xl">✓</span>
-                <span className="text-gray-700">उच्च दर्जाचे १००% सुती कापड</span>
-              </div>
-              <div className="flex items-center gap-3 justify-center md:justify-start">
-                <span className="text-green-600 text-xl">✓</span>
-                <span className="text-gray-700">आकर्षक गणपती डिझाइन</span>
-              </div>
-              <div className="flex items-center gap-3 justify-center md:justify-start">
-                <span className="text-green-600 text-xl">✓</span>
-                <span className="text-gray-700">सर्व साईजमध्ये उपलब्ध (XS ते 5XL व बालके)</span>
-              </div>
-            </div>
+            {/* Registration Number */}
+            <p className="text-sm text-gray-500 mb-4">
+              रजि. नं. म. म. जी. बी. बी. एस. डी. १५७३
+            </p>
+            
+            {/* English Subtitle */}
+            <p className="text-gray-600 text-lg md:text-xl mb-6 max-w-2xl mx-auto md:mx-0">
+              T-Shirt Booking 2026
+            </p>
+            
+            {/* Description */}
+            <p className="text-gray-600 text-md mb-6 max-w-2xl mx-auto md:mx-0">
+              गणेशोत्सवाच्या शुभ उत्सवासाठी खास डिझाइन केलेली टी-शर्ट बुक करा. 
+              सर्व साईजमध्ये उपलब्ध (XS ते 5XL व बालके)
+            </p>
             
             {/* Book Now Button */}
             <button
@@ -88,6 +83,7 @@ export default function Hero() {
                     src="/images/tshirt-design.png"
                     alt="Ganesh Mandal T-Shirt Design 2026 - श्री रामेश्वर मित्र मंडळ"
                     fill
+                    sizes="(max-width: 768px) 80vw, (max-width: 1200px) 50vw, 40vw"
                     className="object-contain rounded-xl"
                     priority
                   />
