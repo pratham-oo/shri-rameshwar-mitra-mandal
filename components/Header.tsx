@@ -20,42 +20,52 @@ export default function Header() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center py-4">
           
-          {/* Logo and Mandal Name */}
-          <div className="flex items-center space-x-3">
-            {/* Icon/Logo Placeholder */}
-            <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center">
-              <span className="text-orange-600 font-bold text-xl">श्री</span>
+          {/* Logo and Mandal Details */}
+          <div className="flex items-center space-x-3 sm:space-x-4">
+            
+            {/* Fixed Logo Container - INCREASED SIZE HERE */}
+            <div className="flex-shrink-0 w-20 h-20 sm:w-24 sm:h-24 rounded-full border-2 border-white shadow-sm overflow-hidden bg-white flex items-center justify-center">
+              <img 
+                src="/images/mandal-logo.png" 
+                alt="मालाडचा मोरया Logo" 
+                className="w-full h-full object-cover scale-[1.35]" 
+              />
             </div>
             
-            {/* Mandal Name in Marathi */}
-            <div>
-              <h1 className="marathi-text text-xl sm:text-2xl font-bold leading-tight">
+            {/* Mandal Name, Subtitle, and Date */}
+            <div className="flex flex-col">
+              <h1 className="marathi-text text-lg sm:text-2xl font-bold leading-tight drop-shadow-sm">
                 श्री रामेश्वर मित्र मंडळ
               </h1>
-              <p className="text-xs sm:text-sm text-orange-100 hidden sm:block">
-                T-Shirt Booking Portal 2026
-              </p>
+              <h2 className="text-base sm:text-lg font-extrabold text-yellow-300 drop-shadow-sm mt-0.5">
+                मालाडचा मोरया
+              </h2>
+              <div className="mt-1">
+                <span className="inline-block bg-white text-red-600 px-2 py-0.5 rounded text-[10px] sm:text-xs font-bold tracking-wider shadow-sm">
+                  स्थापना : १९८५
+                </span>
+              </div>
             </div>
           </div>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex space-x-6">
+          <nav className="hidden md:flex space-x-6 items-center">
             <a 
               href="/" 
-              className="hover:text-orange-200 transition-colors"
+              className="hover:text-orange-200 transition-colors font-medium"
             >
               मुख्यपृष्ठ
             </a>
             <a 
               href="#booking-form" 
               onClick={scrollToBooking}
-              className="hover:text-orange-200 transition-colors"
+              className="hover:text-orange-200 transition-colors font-medium"
             >
               बुकिंग
             </a>
             <a 
               href="/admin" 
-              className="hover:text-orange-200 transition-colors"
+              className="hover:text-orange-200 transition-colors font-medium"
             >
               प्रशासन
             </a>
@@ -64,7 +74,7 @@ export default function Header() {
           {/* Mobile Menu Button */}
           <button 
             onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className="md:hidden focus:outline-none"
+            className="md:hidden focus:outline-none flex-shrink-0 ml-2"
             aria-label="Toggle menu"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -83,7 +93,7 @@ export default function Header() {
             <nav className="flex flex-col space-y-3">
               <a 
                 href="/" 
-                className="hover:text-orange-200 transition-colors py-2"
+                className="hover:text-orange-200 transition-colors py-2 font-medium"
                 onClick={() => setIsMenuOpen(false)}
               >
                 मुख्यपृष्ठ
@@ -91,13 +101,13 @@ export default function Header() {
               <a 
                 href="#booking-form" 
                 onClick={scrollToBooking}
-                className="hover:text-orange-200 transition-colors py-2"
+                className="hover:text-orange-200 transition-colors py-2 font-medium"
               >
                 बुकिंग
               </a>
               <a 
                 href="/admin" 
-                className="hover:text-orange-200 transition-colors py-2"
+                className="hover:text-orange-200 transition-colors py-2 font-medium"
                 onClick={() => setIsMenuOpen(false)}
               >
                 प्रशासन
