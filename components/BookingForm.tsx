@@ -17,7 +17,7 @@ export default function BookingForm() {
   const [mobileNumber, setMobileNumber] = useState('');
   
   // Payment details state
-  const [utrNumber, setUtrNumber] = useState('');
+  const [transactionId, setTransactionId] = useState('');
   const [paymentScreenshot, setPaymentScreenshot] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -217,7 +217,7 @@ export default function BookingForm() {
     if (!mobileNumber.trim() || mobileNumber.length !== 10 || !/^\d+$/.test(mobileNumber)) return false;
     if (items.length === 0) return false;
     if (items.some(item => item.quantity < 1)) return false;
-    if (!utrNumber.trim() || utrNumber.length < 6) return false;
+    if (!transactionId.trim() || transactionId.length < 4) return false;
     if (!paymentScreenshot) return false;
     return true;
   };
@@ -232,7 +232,7 @@ export default function BookingForm() {
           mobile_number: mobileNumber,
           total_amount: calculateTotal(),
           total_shirts: calculateTotalShirts(),
-          utr_number: utrNumber,
+          utr_number: transactionId, // Still stored as utr_number in DB
           payment_screenshot_url: screenshotUrl,
           payment_verified: false,
           collected: false,
@@ -273,7 +273,7 @@ export default function BookingForm() {
       let errorMsg = 'Please fill all required fields:\n';
       if (!customerName.trim()) errorMsg += '- Name\n';
       if (!mobileNumber.trim() || mobileNumber.length !== 10) errorMsg += '- Valid Mobile Number (10 digits)\n';
-      if (!utrNumber.trim()) errorMsg += '- UTR Number\n';
+      if (!transactionId.trim()) errorMsg += '- Transaction ID\n';
       if (!paymentScreenshot) errorMsg += '- Payment Screenshot\n';
       alert(errorMsg);
       return;
@@ -300,7 +300,7 @@ export default function BookingForm() {
         mobile_number: mobileNumber,
         total_amount: calculateTotal(),
         total_shirts: calculateTotalShirts(),
-        utr_number: utrNumber,
+        utr_number: transactionId,
         created_at: new Date().toISOString(),
         items: items.map(item => ({
           size: item.size,
@@ -350,7 +350,7 @@ export default function BookingForm() {
         
         <form onSubmit={handleSubmit} className="space-y-8">
           
-          {/* Customer Details Section */}
+          {/* SECTION 1: Customer Details */}
           <div className="bg-gray-50 rounded-xl p-6 shadow-sm">
             <h3 className="text-xl font-bold text-gray-800 mb-4">
               Customer Details
@@ -393,73 +393,7 @@ export default function BookingForm() {
             </div>
           </div>
           
-          {/* Payment Section */}
-          <div className="bg-gray-50 rounded-xl p-6 shadow-sm">
-            <h3 className="text-xl font-bold text-gray-800 mb-4">
-              Payment Details
-            </h3>
-            
-            {/* QR Code Section */}
-            <div className="bg-white rounded-lg p-4 mb-4 text-center">
-              <p className="text-sm font-semibold text-gray-700 mb-2">
-                Scan QR Code to Pay
-              </p>
-              <div className="flex justify-center">
-                <img 
-                  src="/images/qr.png" 
-                  alt="UPI QR Code for Payment"
-                  className="w-48 h-48 object-contain"
-                />
-              </div>
-              <p className="text-xs text-gray-500 mt-2">Google Pay / PhonePe / Any UPI App</p>
-            </div>
-            
-            {/* UTR Number */}
-            <div className="mb-4">
-              <label className="block text-gray-700 font-semibold mb-2">
-                UTR Number <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                value={utrNumber}
-                onChange={(e) => setUtrNumber(e.target.value.toUpperCase())}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
-                placeholder="Enter UTR number from your payment"
-                disabled={isSubmitting}
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                UTR number is shown in your bank statement after payment
-              </p>
-            </div>
-            
-            {/* Screenshot Upload */}
-            <div className="mb-4">
-              <label className="block text-gray-700 font-semibold mb-2">
-                Payment Screenshot <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleFileSelect}
-                disabled={isSubmitting || uploading}
-                className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100"
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                Upload screenshot showing UTR number and amount
-              </p>
-              {uploading && <p className="text-blue-500 text-sm mt-1">Compressing image...</p>}
-            </div>
-            
-            {/* Preview */}
-            {previewUrl && (
-              <div className="mt-3">
-                <p className="text-sm text-gray-600 mb-1">Preview:</p>
-                <img src={previewUrl} alt="Preview" className="h-32 rounded-lg border" />
-              </div>
-            )}
-          </div>
-          
-          {/* T-Shirt Selection Section */}
+          {/* SECTION 2: T-Shirt Selection */}
           <div className="bg-gray-50 rounded-xl p-6 shadow-sm">
             <h3 className="text-xl font-bold text-gray-800 mb-4">
               T-Shirt Details
@@ -556,7 +490,73 @@ export default function BookingForm() {
             </div>
           </div>
           
-          {/* Total Price Section */}
+          {/* SECTION 3: Payment Details (Moved to before submit) */}
+          <div className="bg-gray-50 rounded-xl p-6 shadow-sm">
+            <h3 className="text-xl font-bold text-gray-800 mb-4">
+              Payment Details
+            </h3>
+            
+            {/* QR Code Section */}
+            <div className="bg-white rounded-lg p-4 mb-4 text-center">
+              <p className="text-sm font-semibold text-gray-700 mb-2">
+                Scan QR Code to Pay
+              </p>
+              <div className="flex justify-center">
+                <img 
+                  src="/images/qr.png" 
+                  alt="UPI QR Code for Payment"
+                  className="w-48 h-48 object-contain"
+                />
+              </div>
+              <p className="text-xs text-gray-500 mt-2">Google Pay / PhonePe / Any UPI App</p>
+            </div>
+            
+            {/* Transaction ID (formerly UTR Number) */}
+            <div className="mb-4">
+              <label className="block text-gray-700 font-semibold mb-2">
+                Transaction ID <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={transactionId}
+                onChange={(e) => setTransactionId(e.target.value.toUpperCase())}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                placeholder="Enter Transaction ID from your payment"
+                disabled={isSubmitting}
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Transaction ID is shown in your payment app/bank statement
+              </p>
+            </div>
+            
+            {/* Screenshot Upload */}
+            <div className="mb-4">
+              <label className="block text-gray-700 font-semibold mb-2">
+                Payment Screenshot <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleFileSelect}
+                disabled={isSubmitting || uploading}
+                className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Upload screenshot showing Transaction ID and amount
+              </p>
+              {uploading && <p className="text-blue-500 text-sm mt-1">Compressing image...</p>}
+            </div>
+            
+            {/* Preview */}
+            {previewUrl && (
+              <div className="mt-3">
+                <p className="text-sm text-gray-600 mb-1">Preview:</p>
+                <img src={previewUrl} alt="Preview" className="h-32 rounded-lg border" />
+              </div>
+            )}
+          </div>
+          
+          {/* SECTION 4: Total Price */}
           <div className="bg-gradient-to-r from-orange-50 to-red-50 rounded-xl p-6 shadow-md">
             <div className="flex flex-col md:flex-row justify-between items-center gap-4">
               <div>
@@ -574,7 +574,7 @@ export default function BookingForm() {
             </div>
           </div>
           
-          {/* Submit Button */}
+          {/* SECTION 5: Submit Button */}
           <button
             type="submit"
             disabled={!isFormValid() || isSubmitting}
