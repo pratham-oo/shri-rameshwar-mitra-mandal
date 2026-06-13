@@ -232,9 +232,10 @@ export default function BookingForm() {
           mobile_number: mobileNumber,
           total_amount: calculateTotal(),
           total_shirts: calculateTotalShirts(),
-          utr_number: transactionId, // Still stored as utr_number in DB
+          transaction_id: transactionId,  // Changed from utr_number to transaction_id
           payment_screenshot_url: screenshotUrl,
           payment_verified: false,
+          status: 'confirmed',
           collected: false,
           created_at: new Date().toISOString()
         })
@@ -300,7 +301,7 @@ export default function BookingForm() {
         mobile_number: mobileNumber,
         total_amount: calculateTotal(),
         total_shirts: calculateTotalShirts(),
-        utr_number: transactionId,
+        transaction_id: transactionId,  // Changed from utr_number to transaction_id
         created_at: new Date().toISOString(),
         items: items.map(item => ({
           size: item.size,
@@ -490,7 +491,7 @@ export default function BookingForm() {
             </div>
           </div>
           
-          {/* SECTION 3: Payment Details (Moved to before submit) */}
+          {/* SECTION 3: Payment Details */}
           <div className="bg-gray-50 rounded-xl p-6 shadow-sm">
             <h3 className="text-xl font-bold text-gray-800 mb-4">
               Payment Details
@@ -511,7 +512,7 @@ export default function BookingForm() {
               <p className="text-xs text-gray-500 mt-2">Google Pay / PhonePe / Any UPI App</p>
             </div>
             
-            {/* Transaction ID (formerly UTR Number) */}
+            {/* Transaction ID */}
             <div className="mb-4">
               <label className="block text-gray-700 font-semibold mb-2">
                 Transaction ID <span className="text-red-500">*</span>

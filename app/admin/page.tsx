@@ -15,8 +15,11 @@ interface Order {
   collected: boolean;
   collected_by: string | null;
   collected_at: string | null;
-  utr_number: string | null;
+  transaction_id: string | null;
   payment_screenshot_url: string | null;
+  status: string | null;
+  rejection_reason: string | null;
+  notes: string | null;
   created_at: string;
   order_items?: any[];
 }
@@ -28,6 +31,7 @@ interface DashboardStats {
   pendingPayment: number;
   pendingCollection: number;
   collected: number;
+  rejected: number;
   sizeBreakdown: { [key: string]: number };
   dateWiseOrders: { date: string; count: number }[];
 }
@@ -45,7 +49,7 @@ export default function AdminPage() {
   const [exporting, setExporting] = useState(false);
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loadingStats, setLoadingStats] = useState(true);
-  const [activeFilter, setActiveFilter] = useState<'all' | 'pendingPayment' | 'pendingCollection' | 'collected'>('all');
+  const [activeFilter, setActiveFilter] = useState<'all' | 'pendingPayment' | 'pendingCollection' | 'collected' | 'rejected'>('all');
 
   // All sizes for breakdown
   const allSizes = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL', '4XL', '5XL', '22', '24', '26', '28', '30', '32'];
@@ -94,15 +98,19 @@ export default function AdminPage() {
     
     switch (filter) {
       case 'pendingPayment':
-        filteredOrders = ordersData.filter(o => !o.payment_verified);
+        filteredOrders = ordersData.filter(o => o.status !== 'rejected' && !o.payment_verified);
         break;
       case 'pendingCollection':
-        filteredOrders = ordersData.filter(o => o.payment_verified && !o.collected);
+        filteredOrders = ordersData.filter(o => o.status !== 'rejected' && o.payment_verified && !o.collected);
         break;
       case 'collected':
-        filteredOrders = ordersData.filter(o => o.collected);
+        filteredOrders = ordersData.filter(o => o.status !== 'rejected' && o.collected);
+        break;
+      case 'rejected':
+        filteredOrders = ordersData.filter(o => o.status === 'rejected');
         break;
       default:
+        filteredOrders = ordersData.filter(o => o.status !== 'rejected');
         break;
     }
     
@@ -123,19 +131,24 @@ export default function AdminPage() {
       
       if (ordersError) throw ordersError;
       
+      // Filter out rejected orders for main stats
+      const validOrders = ordersData.filter(o => o.status !== 'rejected');
+      const rejectedOrders = ordersData.filter(o => o.status === 'rejected');
+      
       // Calculate statistics
-      const totalOrders = ordersData.length;
-      const totalShirts = ordersData.reduce((sum, order) => sum + order.total_shirts, 0);
-      const totalAmount = ordersData.reduce((sum, order) => sum + order.total_amount, 0);
-      const pendingPayment = ordersData.filter(o => !o.payment_verified).length;
-      const pendingCollection = ordersData.filter(o => o.payment_verified && !o.collected).length;
-      const collected = ordersData.filter(o => o.collected).length;
+      const totalOrders = validOrders.length;
+      const totalShirts = validOrders.reduce((sum, order) => sum + order.total_shirts, 0);
+      const totalAmount = validOrders.reduce((sum, order) => sum + order.total_amount, 0);
+      const pendingPayment = validOrders.filter(o => !o.payment_verified).length;
+      const pendingCollection = validOrders.filter(o => o.payment_verified && !o.collected).length;
+      const collected = validOrders.filter(o => o.collected).length;
+      const rejected = rejectedOrders.length;
       
       // Size breakdown
       const sizeBreakdown: { [key: string]: number } = {};
       allSizes.forEach(size => { sizeBreakdown[size] = 0; });
       
-      ordersData.forEach(order => {
+      validOrders.forEach(order => {
         order.order_items?.forEach((item: any) => {
           if (sizeBreakdown[item.size] !== undefined) {
             sizeBreakdown[item.size] += item.quantity;
@@ -153,7 +166,7 @@ export default function AdminPage() {
       
       last7Days.forEach(date => { dateWiseOrders[date] = 0; });
       
-      ordersData.forEach(order => {
+      validOrders.forEach(order => {
         const orderDate = new Date(order.created_at).toISOString().split('T')[0];
         if (dateWiseOrders[orderDate] !== undefined) {
           dateWiseOrders[orderDate]++;
@@ -167,6 +180,7 @@ export default function AdminPage() {
         pendingPayment,
         pendingCollection,
         collected,
+        rejected,
         sizeBreakdown,
         dateWiseOrders: Object.entries(dateWiseOrders).map(([date, count]) => ({ date, count }))
       });
@@ -264,6 +278,32 @@ export default function AdminPage() {
     }
   };
 
+  const rejectOrder = async (orderId: number, orderIdString: string) => {
+    const reason = prompt('Reason for rejection (e.g., Fake Transaction ID, Wrong Amount, No Payment):');
+    if (!reason) return;
+    
+    setVerifying(true);
+    
+    const { error } = await supabase
+      .from('orders')
+      .update({
+        status: 'rejected',
+        rejection_reason: reason,
+        payment_verified: false
+      })
+      .eq('id', orderId);
+    
+    if (error) {
+      alert('Error: ' + error.message);
+    } else {
+      alert(`❌ Order ${orderIdString} marked as REJECTED!\nReason: ${reason}`);
+      fetchDashboardStats();
+      fetchAllOrders();
+    }
+    
+    setVerifying(false);
+  };
+
   const exportToCSV = async () => {
     setExporting(true);
     
@@ -277,8 +317,10 @@ export default function AdminPage() {
           total_amount,
           total_shirts,
           payment_verified,
-          utr_number,
+          transaction_id,
           payment_screenshot_url,
+          status,
+          rejection_reason,
           collected,
           collected_by,
           collected_at,
@@ -299,8 +341,10 @@ export default function AdminPage() {
         'Total Shirts': order.total_shirts,
         'Total Amount': `₹${order.total_amount}`,
         'Payment Verified': order.payment_verified ? 'Yes' : 'No',
-        'UTR Number': order.utr_number || '-',
+        'Transaction ID': order.transaction_id || '-',
         'Screenshot Link': order.payment_screenshot_url || '-',
+        'Status': order.status || 'confirmed',
+        'Rejection Reason': order.rejection_reason || '-',
         'Collected': order.collected ? 'Yes' : 'No',
         'Collected By': order.collected_by || '-',
         'Collected At': order.collected_at ? new Date(order.collected_at).toLocaleString() : '-',
@@ -379,7 +423,7 @@ export default function AdminPage() {
         {stats && (
           <>
             {/* Main Stats Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+            <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-6">
               <div className="bg-white rounded-lg shadow-md p-4 text-center">
                 <p className="text-2xl font-bold text-orange-600">{stats.totalOrders}</p>
                 <p className="text-sm text-gray-600">Total Orders</p>
@@ -399,6 +443,10 @@ export default function AdminPage() {
               <div className="bg-white rounded-lg shadow-md p-4 text-center cursor-pointer hover:shadow-lg transition" onClick={() => applyFilter('pendingCollection')}>
                 <p className="text-2xl font-bold text-purple-600">{stats.pendingCollection}</p>
                 <p className="text-sm text-gray-600">Pending Collection</p>
+              </div>
+              <div className="bg-white rounded-lg shadow-md p-4 text-center cursor-pointer hover:shadow-lg transition" onClick={() => applyFilter('rejected')}>
+                <p className="text-2xl font-bold text-red-600">{stats.rejected}</p>
+                <p className="text-sm text-gray-600">Rejected</p>
               </div>
             </div>
 
@@ -444,7 +492,7 @@ export default function AdminPage() {
                   : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
               }`}
             >
-              All Orders ({stats?.totalOrders || 0})
+              Active Orders ({stats?.totalOrders || 0})
             </button>
             <button
               onClick={() => applyFilter('pendingPayment')}
@@ -475,6 +523,16 @@ export default function AdminPage() {
               }`}
             >
               ✓ Collected ({stats?.collected || 0})
+            </button>
+            <button
+              onClick={() => applyFilter('rejected')}
+              className={`px-4 py-2 rounded-lg font-semibold transition ${
+                activeFilter === 'rejected' 
+                  ? 'bg-red-600 text-white' 
+                  : 'bg-red-100 text-red-700 hover:bg-red-200'
+              }`}
+            >
+              ❌ Rejected ({stats?.rejected || 0})
             </button>
           </div>
         </div>
@@ -551,7 +609,9 @@ export default function AdminPage() {
         <div className="space-y-4">
           {orders.map((order) => (
             <div key={order.id} className={`bg-white rounded-lg shadow-md overflow-hidden border-l-8 ${
-              order.collected ? 'border-green-500' : order.payment_verified ? 'border-blue-500' : 'border-yellow-500'
+              order.status === 'rejected' ? 'border-red-500' :
+              order.collected ? 'border-green-500' : 
+              order.payment_verified ? 'border-blue-500' : 'border-yellow-500'
             }`}>
               <div className="p-6">
                 {/* Order Header */}
@@ -567,6 +627,14 @@ export default function AdminPage() {
                     </p>
                   </div>
                 </div>
+                
+                {/* Rejected Banner */}
+                {order.status === 'rejected' && (
+                  <div className="mb-4 bg-red-50 border border-red-500 rounded-lg p-3">
+                    <p className="text-red-700 font-semibold">❌ REJECTED ORDER</p>
+                    <p className="text-sm text-red-600 mt-1">Reason: {order.rejection_reason || 'Fraudulent activity detected'}</p>
+                  </div>
+                )}
                 
                 {/* Customer Info */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4 pb-4 border-b">
@@ -602,11 +670,11 @@ export default function AdminPage() {
                   </div>
                 )}
                 
-                {/* UTR Number if available */}
-                {order.utr_number && (
+                {/* Transaction ID */}
+                {order.transaction_id && (
                   <div className="mb-3">
-                    <p className="text-xs text-gray-500">UTR Number</p>
-                    <p className="text-sm font-mono bg-gray-50 px-2 py-1 rounded inline-block">{order.utr_number}</p>
+                    <p className="text-xs text-gray-500">Transaction ID</p>
+                    <p className="text-sm font-mono bg-gray-50 px-2 py-1 rounded inline-block">{order.transaction_id}</p>
                   </div>
                 )}
                 
@@ -636,73 +704,97 @@ export default function AdminPage() {
                 )}
                 
                 {/* Status Badges */}
-                <div className="flex gap-3 mb-4">
-                  <span className={`px-3 py-1 rounded-full text-sm font-semibold ${
-                    order.payment_verified 
-                      ? 'bg-green-100 text-green-700' 
-                      : 'bg-yellow-100 text-yellow-700'
-                  }`}>
-                    {order.payment_verified ? '✓ Payment Verified' : '⏳ Payment Pending'}
-                  </span>
-                  <span className={`px-3 py-1 rounded-full text-sm font-semibold ${
-                    order.collected 
-                      ? 'bg-blue-100 text-blue-700' 
-                      : 'bg-gray-100 text-gray-700'
-                  }`}>
-                    {order.collected ? '✓ Collected' : '📦 Not Collected'}
-                  </span>
-                </div>
+                {order.status !== 'rejected' && (
+                  <div className="flex gap-3 mb-4">
+                    <span className={`px-3 py-1 rounded-full text-sm font-semibold ${
+                      order.payment_verified 
+                        ? 'bg-green-100 text-green-700' 
+                        : 'bg-yellow-100 text-yellow-700'
+                    }`}>
+                      {order.payment_verified ? '✓ Payment Verified' : '⏳ Payment Pending'}
+                    </span>
+                    <span className={`px-3 py-1 rounded-full text-sm font-semibold ${
+                      order.collected 
+                        ? 'bg-blue-100 text-blue-700' 
+                        : 'bg-gray-100 text-gray-700'
+                    }`}>
+                      {order.collected ? '✓ Collected' : '📦 Not Collected'}
+                    </span>
+                  </div>
+                )}
                 
                 {/* Action Buttons */}
-                <div className="flex gap-3">
-                  {!order.payment_verified && order.payment_screenshot_url && (
-                    <button
-                      onClick={() => verifyPayment(order.id, order.order_id)}
-                      className="bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-green-700"
-                    >
-                      ✅ Verify Payment
-                    </button>
-                  )}
-                  {!order.payment_verified && !order.payment_screenshot_url && (
-                    <button
-                      disabled
-                      className="bg-gray-400 text-white px-4 py-2 rounded-lg text-sm font-semibold cursor-not-allowed"
-                      title="No screenshot uploaded yet"
-                    >
-                      ⏳ Waiting for Screenshot
-                    </button>
-                  )}
-                  {order.payment_verified && !order.collected && (
-                    <button
-                      onClick={() => markAsCollected(order.id, order.order_id)}
-                      className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700"
-                    >
-                      📦 Mark as Collected
-                    </button>
-                  )}
-                  {order.collected && (
-                    <button
-                      disabled
-                      className="bg-gray-300 text-gray-500 px-4 py-2 rounded-lg text-sm font-semibold cursor-not-allowed"
-                    >
-                      ✓ Already Collected
-                    </button>
-                  )}
-                </div>
+                {order.status !== 'rejected' && (
+                  <div className="flex gap-3">
+                    {!order.payment_verified && order.payment_screenshot_url && (
+                      <button
+                        onClick={() => verifyPayment(order.id, order.order_id)}
+                        className="bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-green-700"
+                      >
+                        ✅ Verify Payment
+                      </button>
+                    )}
+                    {!order.payment_verified && !order.payment_screenshot_url && (
+                      <button
+                        disabled
+                        className="bg-gray-400 text-white px-4 py-2 rounded-lg text-sm font-semibold cursor-not-allowed"
+                        title="No screenshot uploaded yet"
+                      >
+                        ⏳ Waiting for Screenshot
+                      </button>
+                    )}
+                    {order.payment_verified && !order.collected && (
+                      <button
+                        onClick={() => markAsCollected(order.id, order.order_id)}
+                        className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700"
+                      >
+                        📦 Mark as Collected
+                      </button>
+                    )}
+                    {!order.payment_verified && (
+                      <button
+                        onClick={() => rejectOrder(order.id, order.order_id)}
+                        className="bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-red-700"
+                      >
+                        ❌ Reject Order
+                      </button>
+                    )}
+                    {order.collected && (
+                      <button
+                        disabled
+                        className="bg-gray-300 text-gray-500 px-4 py-2 rounded-lg text-sm font-semibold cursor-not-allowed"
+                      >
+                        ✓ Already Collected
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           ))}
         </div>
         
         {/* Empty State for Filters */}
-        {orders.length === 0 && !searchTerm && activeFilter !== 'all' && (
+        {orders.length === 0 && !searchTerm && activeFilter !== 'all' && activeFilter !== 'rejected' && (
           <div className="bg-gray-50 border border-gray-200 rounded-lg p-12 text-center">
             <p className="text-gray-500 text-lg">No orders in this category</p>
             <button
               onClick={() => applyFilter('all')}
               className="mt-4 text-orange-600 font-semibold hover:underline"
             >
-              View all orders →
+              View all active orders →
+            </button>
+          </div>
+        )}
+        
+        {orders.length === 0 && !searchTerm && activeFilter === 'rejected' && (
+          <div className="bg-gray-50 border border-gray-200 rounded-lg p-12 text-center">
+            <p className="text-gray-500 text-lg">No rejected orders</p>
+            <button
+              onClick={() => applyFilter('all')}
+              className="mt-4 text-orange-600 font-semibold hover:underline"
+            >
+              View all active orders →
             </button>
           </div>
         )}
@@ -715,9 +807,10 @@ export default function AdminPage() {
             <li>Search using the search box above</li>
             <li>Verify customer name and mobile number match</li>
             <li>Click "View Payment Screenshot" to verify payment</li>
-            <li>Check UTR number matches the screenshot</li>
+            <li>Check Transaction ID matches the screenshot</li>
             <li>Click "Verify Payment" after confirming payment</li>
-            <li>Hand over the T-Shirts</li>
+            <li>If payment is fake, click "Reject Order" and enter reason</li>
+            <li>Hand over the T-Shirts only for verified payments</li>
             <li>Enter your name when prompted</li>
             <li>Click "Mark as Collected" button</li>
             <li className="font-bold">Once marked collected, it cannot be collected again</li>
