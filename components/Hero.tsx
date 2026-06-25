@@ -19,7 +19,7 @@ export default function Hero() {
       </div>
 
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-20">
-        <div className="flex flex-col md:flex-row items-center justify-between gap-12">
+        <div className="flex flex-col md:flex-row items-center justify-between gap-8 md:gap-12">
           
           {/* Left Side - Text Content */}
           <div className="flex-1 text-center md:text-left">
@@ -70,20 +70,20 @@ export default function Hero() {
             </p>
           </div>
           
-          {/* Right Side - T-Shirt Image */}
-          <div className="flex-1 flex justify-center">
+          {/* Right Side - T-Shirt Image (ENLARGED) */}
+          <div className="flex-1 flex justify-center md:justify-end">
             <div className="relative group">
-              {/* Glow effect behind image */}
-              <div className="absolute inset-0 bg-gradient-to-r from-orange-400 to-red-400 rounded-3xl blur-2xl opacity-50 group-hover:opacity-75 transition-opacity duration-500"></div>
+              {/* Glow effect behind image - LARGER */}
+              <div className="absolute inset-[-20%] bg-gradient-to-r from-orange-400 to-red-400 rounded-3xl blur-3xl opacity-50 group-hover:opacity-75 transition-opacity duration-500"></div>
               
-              {/* Image Container */}
-              <div className="relative bg-white rounded-2xl shadow-2xl p-4 transform group-hover:scale-105 transition-transform duration-300">
-                <div className="relative w-64 h-64 md:w-80 md:h-80">
+              {/* Image Container - LARGER */}
+              <div className="relative bg-white rounded-2xl shadow-2xl p-6 transform group-hover:scale-105 transition-transform duration-300">
+                <div className="relative w-72 h-72 sm:w-80 sm:h-80 md:w-96 md:h-96 lg:w-[450px] lg:h-[450px]">
                   <Image
-                    src="/images/tshirt-design.png"
+                    src="/images/tshirt-2026.png"
                     alt="Ganesh Mandal T-Shirt Design 2026 - श्री रामेश्वर मित्र मंडळ"
                     fill
-                    sizes="(max-width: 768px) 80vw, (max-width: 1200px) 50vw, 40vw"
+                    sizes="(max-width: 640px) 80vw, (max-width: 768px) 70vw, (max-width: 1024px) 50vw, 40vw"
                     className="object-contain rounded-xl"
                     priority
                   />

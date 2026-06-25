@@ -24,7 +24,7 @@ export default function BookingForm() {
   
   // T-Shirt items state
   const [items, setItems] = useState<TShirtItem[]>([
-    { id: 1, size: 'M', quantity: 1, pricePerPiece: 350 }
+    { id: 1, size: 'M', quantity: 1, pricePerPiece: 330 }
   ]);
   
   const [nextId, setNextId] = useState(2);
@@ -33,8 +33,8 @@ export default function BookingForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitMessage, setSubmitMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   
-  // Price per T-Shirt
-  const PRICE_PER_T_SHIRT = 350;
+  // Price per T-Shirt - UPDATED to ₹330
+  const PRICE_PER_T_SHIRT = 330;
   
   // Available sizes
   const availableSizes = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL', '4XL', '5XL'];
@@ -232,7 +232,7 @@ export default function BookingForm() {
           mobile_number: mobileNumber,
           total_amount: calculateTotal(),
           total_shirts: calculateTotalShirts(),
-          transaction_id: transactionId,  // Changed from utr_number to transaction_id
+          transaction_id: transactionId,
           payment_screenshot_url: screenshotUrl,
           payment_verified: false,
           status: 'confirmed',
@@ -301,7 +301,7 @@ export default function BookingForm() {
         mobile_number: mobileNumber,
         total_amount: calculateTotal(),
         total_shirts: calculateTotalShirts(),
-        transaction_id: transactionId,  // Changed from utr_number to transaction_id
+        transaction_id: transactionId,
         created_at: new Date().toISOString(),
         items: items.map(item => ({
           size: item.size,

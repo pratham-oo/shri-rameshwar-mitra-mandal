@@ -15,14 +15,13 @@ export default function AdminLogin() {
     setLoading(true);
     setError('');
 
-    // Simple credential check
-    // In production, you'd want to hash this or use environment variables
-    const validUsername = 'rameshwar mitra mandal';
-    const validPassword = 'maladcha morya';
+    // Updated Credentials
+    const validUsername = 'rameshwarmitramandal@morya';
+    const validPassword = 'maladchamorya2026';
 
     if (username.toLowerCase() === validUsername && password === validPassword) {
-      // Set a session cookie/token
-      document.cookie = 'admin_auth=true; path=/; max-age=86400'; // 24 hours
+      // Set cookie for 24 hours
+      document.cookie = 'admin_auth=true; path=/; max-age=86400';
       router.push('/admin');
     } else {
       setError('❌ चुकीचे युझरनेम किंवा पासवर्ड');
@@ -58,7 +57,7 @@ export default function AdminLogin() {
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                  placeholder="rameshwar mitra mandal"
+                  placeholder="rameshwarmitramandal@morya"
                   disabled={loading}
                   autoComplete="off"
                 />

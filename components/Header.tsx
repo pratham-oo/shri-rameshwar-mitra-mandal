@@ -23,12 +23,12 @@ export default function Header() {
           {/* Logo and Mandal Details */}
           <div className="flex items-center space-x-3 sm:space-x-4">
             
-            {/* Fixed Logo Container - INCREASED SIZE HERE */}
+            {/* Fixed Logo Container - Removed the scale-[1.35] zoom effect */}
             <div className="flex-shrink-0 w-20 h-20 sm:w-24 sm:h-24 rounded-full border-2 border-white shadow-sm overflow-hidden bg-white flex items-center justify-center">
               <img 
                 src="/images/mandal-logo.png" 
                 alt="मालाडचा मोरया Logo" 
-                className="w-full h-full object-cover scale-[1.35]" 
+                className="w-full h-full object-cover" 
               />
             </div>
             
