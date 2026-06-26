@@ -498,18 +498,72 @@ export default function BookingForm() {
             </h3>
             
             {/* QR Code Section */}
-            <div className="bg-white rounded-lg p-4 mb-4 text-center">
-              <p className="text-sm font-semibold text-gray-700 mb-2">
+            <div className="bg-white rounded-lg p-6 mb-4 text-center">
+              <p className="text-sm font-semibold text-gray-700 mb-3">
                 Scan QR Code to Pay
               </p>
-              <div className="flex justify-center">
+              
+              {/* QR Code Image */}
+              <div className="flex justify-center mb-4">
                 <img 
                   src="/images/qr.png" 
                   alt="UPI QR Code for Payment"
-                  className="w-48 h-48 object-contain"
+                  className="w-48 h-48 object-contain border-2 border-gray-200 rounded-lg p-2"
+                  onError={(e) => {
+                    const target = e.currentTarget;
+                    target.style.display = 'none';
+                    const parent = target.parentElement;
+                    if (parent) {
+                      const fallback = document.createElement('div');
+                      fallback.className = 'w-48 h-48 bg-gray-100 rounded-lg flex flex-col items-center justify-center border-2 border-dashed border-gray-300';
+                      fallback.innerHTML = `
+                        <span class="text-4xl mb-2">📱</span>
+                        <span class="text-xs text-gray-600 text-center px-4">UPI ID: 7506259665@kotakbank</span>
+                      `;
+                      parent.appendChild(fallback);
+                    }
+                  }}
                 />
               </div>
-              <p className="text-xs text-gray-500 mt-2">Google Pay / PhonePe / Any UPI App</p>
+              
+              {/* Payment Details */}
+              <div className="bg-gray-50 rounded-lg p-4 text-left space-y-2">
+                {/* Name */}
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">Account Holder:</span>
+                  <span className="text-sm font-semibold text-gray-800">Siddhesh Sandesh Sakharkar</span>
+                </div>
+                
+                {/* UPI ID with Copy Button */}
+                <div className="flex justify-between items-center bg-white rounded-lg p-2 border border-gray-200">
+                  <span className="text-sm text-gray-600">UPI ID:</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-mono font-semibold text-orange-600" id="upi-id">
+                      7506259665@kotakbank
+                    </span>
+                    <button
+                      onClick={() => {
+                        const upiId = '7506259665@kotakbank';
+                        navigator.clipboard.writeText(upiId);
+                        alert('✅ UPI ID copied to clipboard!');
+                      }}
+                      className="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded hover:bg-orange-200 transition"
+                    >
+                      📋 Copy
+                    </button>
+                  </div>
+                </div>
+                
+                {/* Bank Name */}
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">Bank:</span>
+                  <span className="text-sm font-semibold text-gray-800">Kotak811</span>
+                </div>
+              </div>
+              
+              <p className="text-xs text-gray-500 mt-3">
+                Google Pay / PhonePe / Any UPI App
+              </p>
             </div>
             
             {/* Transaction ID */}
