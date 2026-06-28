@@ -92,7 +92,7 @@ export default function Hero() {
               </div>
             </div>
 
-            {/* PDF Guide Button - Below T-Shirt Image */}
+            {/* PDF Guide Button */}
             <div className="w-full max-w-sm">
               <a
                 href="/ganpati-tee-guide.pdf"
@@ -110,6 +110,23 @@ export default function Hero() {
                 </div>
               </a>
             </div>
+          </div>
+        </div>
+
+        {/* Developer Credit - ENLARGED and VISIBLE */}
+        <div className="mt-12 text-center">
+          <div className="inline-flex items-center gap-3 px-6 py-3 bg-white/70 backdrop-blur-sm rounded-full shadow-md border border-orange-200/60">
+            <span className="text-base md:text-lg">🖥️</span>
+            <span className="text-sm md:text-base text-gray-600 marathi-text font-medium">
+              Developed by
+            </span>
+            <span className="text-base md:text-lg font-bold text-orange-600 marathi-text">
+              प्रथम शिंदे
+            </span>
+            <span className="text-gray-300 text-lg">|</span>
+            <span className="text-sm md:text-base text-gray-500">
+              © २०२६
+            </span>
           </div>
         </div>
       </div>
