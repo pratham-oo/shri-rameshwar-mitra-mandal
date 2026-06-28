@@ -70,13 +70,14 @@ export default function Hero() {
             </p>
           </div>
           
-          {/* Right Side - T-Shirt Image (ENLARGED) */}
-          <div className="flex-1 flex justify-center md:justify-end">
+          {/* Right Side - T-Shirt Image + PDF Guide */}
+          <div className="flex-1 flex flex-col items-center md:items-end gap-6">
+            {/* T-Shirt Image */}
             <div className="relative group">
-              {/* Glow effect behind image - LARGER */}
+              {/* Glow effect behind image */}
               <div className="absolute inset-[-20%] bg-gradient-to-r from-orange-400 to-red-400 rounded-3xl blur-3xl opacity-50 group-hover:opacity-75 transition-opacity duration-500"></div>
               
-              {/* Image Container - LARGER */}
+              {/* Image Container */}
               <div className="relative bg-white rounded-2xl shadow-2xl p-6 transform group-hover:scale-105 transition-transform duration-300">
                 <div className="relative w-72 h-72 sm:w-80 sm:h-80 md:w-96 md:h-96 lg:w-[450px] lg:h-[450px]">
                   <Image
@@ -89,6 +90,25 @@ export default function Hero() {
                   />
                 </div>
               </div>
+            </div>
+
+            {/* PDF Guide Button - Below T-Shirt Image */}
+            <div className="w-full max-w-sm">
+              <a
+                href="/ganpati-tee-guide.pdf"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-semibold py-3 px-6 rounded-xl shadow-md hover:shadow-lg transition-all duration-300 text-center"
+              >
+                <div className="flex items-center justify-center gap-3">
+                  <span className="text-2xl">📋</span>
+                  <div>
+                    <p className="text-sm font-medium">बुकिंग मार्गदर्शक</p>
+                    <p className="text-xs opacity-90">Booking Guide (PDF)</p>
+                  </div>
+                  <span className="text-sm bg-white/20 px-2 py-0.5 rounded-full">📄</span>
+                </div>
+              </a>
             </div>
           </div>
         </div>
