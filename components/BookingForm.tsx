@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 
 // TypeScript interfaces
@@ -33,7 +33,11 @@ export default function BookingForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitMessage, setSubmitMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   
-  // Price per T-Shirt - UPDATED to ₹330
+  // Timer state
+  const [isBookingClosed, setIsBookingClosed] = useState(false);
+  const [showPopup, setShowPopup] = useState(false);
+  
+  // Price per T-Shirt
   const PRICE_PER_T_SHIRT = 330;
   
   // Available sizes
@@ -115,6 +119,27 @@ export default function BookingForm() {
   const getQuantityDisplay = (quantity: number) => {
     return quantity === 0 ? '' : quantity.toString();
   };
+  
+  // Timer logic - checks every second if booking is closed
+  useEffect(() => {
+    const checkBookingDeadline = () => {
+      const now = new Date();
+      const today = new Date(now);
+      today.setHours(23, 59, 0, 0);
+      
+      const timeDiff = today.getTime() - now.getTime();
+      
+      if (timeDiff <= 0) {
+        setIsBookingClosed(true);
+        return;
+      }
+    };
+    
+    checkBookingDeadline();
+    
+    const interval = setInterval(checkBookingDeadline, 1000);
+    return () => clearInterval(interval);
+  }, []);
   
   // Compress image before upload
   const compressImage = async (file: File): Promise<File> => {
@@ -213,6 +238,7 @@ export default function BookingForm() {
   
   // Form validation
   const isFormValid = () => {
+    if (isBookingClosed) return false;
     if (!customerName.trim()) return false;
     if (!mobileNumber.trim() || mobileNumber.length !== 10 || !/^\d+$/.test(mobileNumber)) return false;
     if (items.length === 0) return false;
@@ -269,6 +295,12 @@ export default function BookingForm() {
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Check if booking is closed
+    if (isBookingClosed) {
+      setShowPopup(true);
+      return;
+    }
     
     if (!isFormValid()) {
       let errorMsg = 'Please fill all required fields:\n';
@@ -349,6 +381,35 @@ export default function BookingForm() {
           </div>
         )}
         
+        {/* Booking Closed Popup Modal */}
+        {showPopup && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+            <div className="bg-white rounded-2xl max-w-md w-full p-8 text-center shadow-2xl animate-fade-in-up">
+              <div className="text-6xl mb-4">🙏</div>
+              <h2 className="text-2xl font-bold text-orange-700 marathi-text mb-3">
+                गणपती बाप्पा मोरया!
+              </h2>
+              <p className="text-lg text-gray-700 marathi-text mb-2">
+                बुकिंग बंद झाले आहे.
+              </p>
+              <p className="text-md text-gray-600 marathi-text">
+                आता पुढच्या वर्षी भेटूया. धन्यवाद!
+              </p>
+              <div className="mt-6 p-4 bg-orange-50 rounded-lg">
+                <p className="text-sm text-orange-700 font-medium marathi-text">
+                  "गणेशोत्सवाच्या शुभेच्छा! 🎉"
+                </p>
+              </div>
+              <button
+                onClick={() => setShowPopup(false)}
+                className="mt-6 bg-gradient-to-r from-orange-600 to-red-600 text-white px-8 py-3 rounded-full font-semibold hover:shadow-lg transition-all"
+              >
+                ठीक आहे 👍
+              </button>
+            </div>
+          </div>
+        )}
+        
         <form onSubmit={handleSubmit} className="space-y-8">
           
           {/* SECTION 1: Customer Details */}
@@ -369,7 +430,7 @@ export default function BookingForm() {
                   onChange={(e) => setCustomerName(e.target.value)}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
                   placeholder="Enter your full name"
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || isBookingClosed}
                 />
               </div>
               
@@ -385,7 +446,7 @@ export default function BookingForm() {
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
                   placeholder="9876543210"
                   maxLength={10}
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || isBookingClosed}
                 />
                 {mobileNumber && mobileNumber.length !== 10 && (
                   <p className="text-red-500 text-sm mt-1">Please enter 10 digit mobile number</p>
@@ -413,7 +474,7 @@ export default function BookingForm() {
                         value={item.size}
                         onChange={(e) => updateSize(item.id, e.target.value)}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
-                        disabled={isSubmitting}
+                        disabled={isSubmitting || isBookingClosed}
                       >
                         <optgroup label="Adult Sizes">
                           {availableSizes.map(size => (
@@ -442,7 +503,7 @@ export default function BookingForm() {
                         onBlur={() => handleQuantityBlur(item.id, item.quantity)}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
                         placeholder="1"
-                        disabled={isSubmitting}
+                        disabled={isSubmitting || isBookingClosed}
                       />
                       <p className="text-xs text-gray-400 mt-1">(1 to 20)</p>
                     </div>
@@ -471,7 +532,7 @@ export default function BookingForm() {
                         type="button"
                         onClick={() => removeTShirt(item.id)}
                         className="text-red-500 hover:text-red-700 font-bold py-2 px-3"
-                        disabled={isSubmitting}
+                        disabled={isSubmitting || isBookingClosed}
                       >
                         🗑️
                       </button>
@@ -484,7 +545,7 @@ export default function BookingForm() {
                 type="button"
                 onClick={addTShirt}
                 className="w-full py-3 border-2 border-dashed border-orange-300 rounded-lg text-orange-600 font-semibold hover:bg-orange-50 transition-colors"
-                disabled={isSubmitting}
+                disabled={isSubmitting || isBookingClosed}
               >
                 + Add Another T-Shirt
               </button>
@@ -548,6 +609,7 @@ export default function BookingForm() {
                         alert('✅ UPI ID copied to clipboard!');
                       }}
                       className="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded hover:bg-orange-200 transition"
+                      disabled={isBookingClosed}
                     >
                       📋 Copy
                     </button>
@@ -577,7 +639,7 @@ export default function BookingForm() {
                 onChange={(e) => setTransactionId(e.target.value.toUpperCase())}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
                 placeholder="Enter Transaction ID from your payment"
-                disabled={isSubmitting}
+                disabled={isSubmitting || isBookingClosed}
               />
               <p className="text-xs text-gray-500 mt-1">
                 Transaction ID is shown in your payment app/bank statement
@@ -593,7 +655,7 @@ export default function BookingForm() {
                 type="file"
                 accept="image/*"
                 onChange={handleFileSelect}
-                disabled={isSubmitting || uploading}
+                disabled={isSubmitting || uploading || isBookingClosed}
                 className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100"
               />
               <p className="text-xs text-gray-500 mt-1">
@@ -632,14 +694,14 @@ export default function BookingForm() {
           {/* SECTION 5: Submit Button */}
           <button
             type="submit"
-            disabled={!isFormValid() || isSubmitting}
+            disabled={!isFormValid() || isSubmitting || isBookingClosed}
             className={`w-full py-4 text-lg font-bold rounded-lg transition-all ${
-              !isFormValid() || isSubmitting
+              !isFormValid() || isSubmitting || isBookingClosed
                 ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                 : 'bg-gradient-to-r from-orange-600 to-red-600 text-white hover:shadow-lg transform hover:scale-[1.02] cursor-pointer'
             }`}
           >
-            {isSubmitting ? 'Submitting Booking...' : 'Complete Booking & Submit 📝'}
+            {isBookingClosed ? 'बुकिंग बंद झाले आहे' : isSubmitting ? 'Submitting Booking...' : 'Complete Booking & Submit 📝'}
           </button>
           
           <p className="text-center text-sm text-gray-500">
@@ -647,6 +709,22 @@ export default function BookingForm() {
           </p>
         </form>
       </div>
+      
+      <style jsx>{`
+        @keyframes fadeInUp {
+          from {
+            opacity: 0;
+            transform: translateY(30px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        .animate-fade-in-up {
+          animation: fadeInUp 0.5s ease-out;
+        }
+      `}</style>
     </section>
   );
 }

@@ -1,14 +1,49 @@
 'use client';
 
 import Image from 'next/image';
+import { useState, useEffect } from 'react';
 
 export default function Hero() {
+  const [timeRemaining, setTimeRemaining] = useState('');
+  const [isBookingClosed, setIsBookingClosed] = useState(false);
+
   const handleBookNow = () => {
     const bookingSection = document.getElementById('booking-form');
     if (bookingSection) {
       bookingSection.scrollIntoView({ behavior: 'smooth' });
     }
   };
+
+  // Timer logic
+  useEffect(() => {
+    const checkBookingDeadline = () => {
+      const now = new Date();
+      const today = new Date(now);
+      today.setHours(23, 59, 0, 0); // 11:59 PM today
+      
+      const timeDiff = today.getTime() - now.getTime();
+      
+      if (timeDiff <= 0) {
+        setIsBookingClosed(true);
+        setTimeRemaining('समाप्त');
+        return;
+      }
+      
+      // Calculate hours, minutes, seconds remaining
+      const hours = Math.floor(timeDiff / (1000 * 60 * 60));
+      const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((timeDiff % (1000 * 60)) / 1000);
+      
+      setTimeRemaining(`${hours} तास ${minutes} मिनिटे ${seconds} सेकंद`);
+    };
+    
+    checkBookingDeadline();
+    
+    // Update timer every second
+    const interval = setInterval(checkBookingDeadline, 1000);
+    
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <section className="relative bg-gradient-to-br from-orange-50 via-red-50 to-yellow-50 overflow-hidden">
@@ -19,6 +54,30 @@ export default function Hero() {
       </div>
 
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-20">
+        
+        {/* Timer Banner - Below the main content */}
+        <div className="mb-8 text-center">
+          {isBookingClosed ? (
+            <div className="inline-block bg-red-100 border-2 border-red-500 rounded-xl px-8 py-4 shadow-lg">
+              <p className="text-red-700 font-bold text-xl marathi-text">
+                🙏 बुकिंग बंद झाले आहे
+              </p>
+              <p className="text-red-600 mt-1 text-sm">
+                गणपती बाप्पा मोरया! पुढच्या वर्षी भेटूया.
+              </p>
+            </div>
+          ) : (
+            <div className="inline-block bg-gradient-to-r from-orange-100 to-orange-200 border border-orange-300 rounded-xl px-8 py-4 shadow-md">
+              <p className="text-orange-700 font-semibold text-sm md:text-base">
+                ⏳ बुकिंग साठी उरलेला वेळ:
+              </p>
+              <p className="text-2xl md:text-3xl font-bold text-orange-600 mt-1 animate-pulse">
+                {timeRemaining}
+              </p>
+            </div>
+          )}
+        </div>
+
         <div className="flex flex-col md:flex-row items-center justify-between gap-8 md:gap-12">
           
           {/* Left Side - Text Content */}
@@ -59,14 +118,19 @@ export default function Hero() {
             {/* Book Now Button */}
             <button
               onClick={handleBookNow}
-              className="bg-gradient-to-r from-orange-600 to-red-600 text-white text-lg md:text-xl font-semibold px-8 py-3 rounded-full shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300"
+              disabled={isBookingClosed}
+              className={`text-white text-lg md:text-xl font-semibold px-8 py-3 rounded-full shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 ${
+                isBookingClosed 
+                  ? 'bg-gray-400 cursor-not-allowed' 
+                  : 'bg-gradient-to-r from-orange-600 to-red-600 hover:scale-105'
+              }`}
             >
-              आत्ताच बुक करा 🚀
+              {isBookingClosed ? 'बुकिंग बंद' : 'आत्ताच बुक करा 🚀'}
             </button>
             
             {/* Small note */}
             <p className="text-sm text-gray-500 mt-4">
-              मर्यादित संख्या • लवकर बुक करा
+              {isBookingClosed ? 'बुकिंग संपले. पुढच्या वर्षी भेटूया!' : 'मर्यादित संख्या • लवकर बुक करा'}
             </p>
           </div>
           
