@@ -33,8 +33,8 @@ export default function BookingForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitMessage, setSubmitMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   
-  // Timer state
-  const [isBookingClosed, setIsBookingClosed] = useState(false);
+  // Timer state - FORCE CLOSED
+  const [isBookingClosed, setIsBookingClosed] = useState(true); // ← Set to true to disable everything
   const [showPopup, setShowPopup] = useState(false);
   
   // Price per T-Shirt
@@ -120,25 +120,10 @@ export default function BookingForm() {
     return quantity === 0 ? '' : quantity.toString();
   };
   
-  // Timer logic - checks every second if booking is closed
+  // Timer logic - FORCE CLOSED
   useEffect(() => {
-    const checkBookingDeadline = () => {
-      const now = new Date();
-      const today = new Date(now);
-      today.setHours(23, 59, 0, 0);
-      
-      const timeDiff = today.getTime() - now.getTime();
-      
-      if (timeDiff <= 0) {
-        setIsBookingClosed(true);
-        return;
-      }
-    };
-    
-    checkBookingDeadline();
-    
-    const interval = setInterval(checkBookingDeadline, 1000);
-    return () => clearInterval(interval);
+    // Force booking as closed - everything disabled
+    setIsBookingClosed(true);
   }, []);
   
   // Compress image before upload
@@ -236,7 +221,7 @@ export default function BookingForm() {
     return publicUrl;
   };
   
-  // Form validation
+  // Form validation - Always returns false when closed
   const isFormValid = () => {
     if (isBookingClosed) return false;
     if (!customerName.trim()) return false;
@@ -296,7 +281,7 @@ export default function BookingForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Check if booking is closed
+    // Check if booking is closed - shows popup
     if (isBookingClosed) {
       setShowPopup(true);
       return;
@@ -374,6 +359,16 @@ export default function BookingForm() {
           <div className="w-24 h-1 bg-gradient-to-r from-orange-500 to-red-500 mx-auto mt-4 rounded-full"></div>
         </div>
         
+        {/* Booking Closed Banner */}
+        <div className="mb-6 p-4 rounded-lg bg-red-50 border-2 border-red-500 text-center">
+          <p className="text-red-700 font-bold text-xl marathi-text">
+            🙏 बुकिंग बंद झाले आहे
+          </p>
+          <p className="text-red-600 mt-1">
+            गणपती बाप्पा मोरया! पुढच्या वर्षी भेटूया.
+          </p>
+        </div>
+        
         {/* Error Message */}
         {submitMessage && submitMessage.type === 'error' && (
           <div className="mb-6 p-4 rounded-lg bg-red-50 border border-red-500 text-red-700">
@@ -412,14 +407,14 @@ export default function BookingForm() {
         
         <form onSubmit={handleSubmit} className="space-y-8">
           
-          {/* SECTION 1: Customer Details */}
-          <div className="bg-gray-50 rounded-xl p-6 shadow-sm">
+          {/* SECTION 1: Customer Details - DISABLED */}
+          <div className="bg-gray-50 rounded-xl p-6 shadow-sm opacity-70">
             <h3 className="text-xl font-bold text-gray-800 mb-4">
               Customer Details
             </h3>
             
             <div className="space-y-4">
-              {/* Name */}
+              {/* Name - DISABLED */}
               <div>
                 <label className="block text-gray-700 font-semibold mb-2">
                   Full Name <span className="text-red-500">*</span>
@@ -428,13 +423,13 @@ export default function BookingForm() {
                   type="text"
                   value={customerName}
                   onChange={(e) => setCustomerName(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 bg-gray-100 cursor-not-allowed"
                   placeholder="Enter your full name"
-                  disabled={isSubmitting || isBookingClosed}
+                  disabled={true}
                 />
               </div>
               
-              {/* Mobile Number */}
+              {/* Mobile Number - DISABLED */}
               <div>
                 <label className="block text-gray-700 font-semibold mb-2">
                   Mobile Number <span className="text-red-500">*</span>
@@ -443,10 +438,10 @@ export default function BookingForm() {
                   type="tel"
                   value={mobileNumber}
                   onChange={(e) => setMobileNumber(e.target.value.replace(/\D/g, '').slice(0, 10))}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 bg-gray-100 cursor-not-allowed"
                   placeholder="9876543210"
                   maxLength={10}
-                  disabled={isSubmitting || isBookingClosed}
+                  disabled={true}
                 />
                 {mobileNumber && mobileNumber.length !== 10 && (
                   <p className="text-red-500 text-sm mt-1">Please enter 10 digit mobile number</p>
@@ -455,8 +450,8 @@ export default function BookingForm() {
             </div>
           </div>
           
-          {/* SECTION 2: T-Shirt Selection */}
-          <div className="bg-gray-50 rounded-xl p-6 shadow-sm">
+          {/* SECTION 2: T-Shirt Selection - DISABLED */}
+          <div className="bg-gray-50 rounded-xl p-6 shadow-sm opacity-70">
             <h3 className="text-xl font-bold text-gray-800 mb-4">
               T-Shirt Details
             </h3>
@@ -465,7 +460,7 @@ export default function BookingForm() {
               {items.map((item) => (
                 <div key={item.id} className="bg-white rounded-lg p-4 border border-gray-200">
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-                    {/* Size Selection */}
+                    {/* Size Selection - DISABLED */}
                     <div>
                       <label className="block text-gray-600 text-sm font-semibold mb-1">
                         Size
@@ -473,8 +468,8 @@ export default function BookingForm() {
                       <select
                         value={item.size}
                         onChange={(e) => updateSize(item.id, e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
-                        disabled={isSubmitting || isBookingClosed}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 bg-gray-100 cursor-not-allowed"
+                        disabled={true}
                       >
                         <optgroup label="Adult Sizes">
                           {availableSizes.map(size => (
@@ -489,7 +484,7 @@ export default function BookingForm() {
                       </select>
                     </div>
                     
-                    {/* Quantity */}
+                    {/* Quantity - DISABLED */}
                     <div>
                       <label className="block text-gray-600 text-sm font-semibold mb-1">
                         Quantity
@@ -501,9 +496,9 @@ export default function BookingForm() {
                         value={getQuantityDisplay(item.quantity)}
                         onChange={(e) => handleQuantityChange(item.id, e)}
                         onBlur={() => handleQuantityBlur(item.id, item.quantity)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 bg-gray-100 cursor-not-allowed"
                         placeholder="1"
-                        disabled={isSubmitting || isBookingClosed}
+                        disabled={true}
                       />
                       <p className="text-xs text-gray-400 mt-1">(1 to 20)</p>
                     </div>
@@ -518,7 +513,7 @@ export default function BookingForm() {
                       </div>
                     </div>
                     
-                    {/* Subtotal & Remove Button */}
+                    {/* Subtotal & Remove Button - DISABLED */}
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex-1">
                         <label className="block text-gray-600 text-sm font-semibold mb-1">
@@ -531,8 +526,8 @@ export default function BookingForm() {
                       <button
                         type="button"
                         onClick={() => removeTShirt(item.id)}
-                        className="text-red-500 hover:text-red-700 font-bold py-2 px-3"
-                        disabled={isSubmitting || isBookingClosed}
+                        className="text-red-500 hover:text-red-700 font-bold py-2 px-3 cursor-not-allowed opacity-50"
+                        disabled={true}
                       >
                         🗑️
                       </button>
@@ -544,16 +539,16 @@ export default function BookingForm() {
               <button
                 type="button"
                 onClick={addTShirt}
-                className="w-full py-3 border-2 border-dashed border-orange-300 rounded-lg text-orange-600 font-semibold hover:bg-orange-50 transition-colors"
-                disabled={isSubmitting || isBookingClosed}
+                className="w-full py-3 border-2 border-dashed border-orange-300 rounded-lg text-orange-600 font-semibold bg-gray-100 cursor-not-allowed opacity-50"
+                disabled={true}
               >
                 + Add Another T-Shirt
               </button>
             </div>
           </div>
           
-          {/* SECTION 3: Payment Details */}
-          <div className="bg-gray-50 rounded-xl p-6 shadow-sm">
+          {/* SECTION 3: Payment Details - DISABLED */}
+          <div className="bg-gray-50 rounded-xl p-6 shadow-sm opacity-70">
             <h3 className="text-xl font-bold text-gray-800 mb-4">
               Payment Details
             </h3>
@@ -595,7 +590,7 @@ export default function BookingForm() {
                   <span className="text-sm font-semibold text-gray-800">Siddhesh Sandesh Sakharkar</span>
                 </div>
                 
-                {/* UPI ID with Copy Button */}
+                {/* UPI ID with Copy Button - DISABLED */}
                 <div className="flex justify-between items-center bg-white rounded-lg p-2 border border-gray-200">
                   <span className="text-sm text-gray-600">UPI ID:</span>
                   <div className="flex items-center gap-2">
@@ -608,8 +603,8 @@ export default function BookingForm() {
                         navigator.clipboard.writeText(upiId);
                         alert('✅ UPI ID copied to clipboard!');
                       }}
-                      className="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded hover:bg-orange-200 transition"
-                      disabled={isBookingClosed}
+                      className="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded hover:bg-orange-200 transition cursor-not-allowed opacity-50"
+                      disabled={true}
                     >
                       📋 Copy
                     </button>
@@ -628,7 +623,7 @@ export default function BookingForm() {
               </p>
             </div>
             
-            {/* Transaction ID */}
+            {/* Transaction ID - DISABLED */}
             <div className="mb-4">
               <label className="block text-gray-700 font-semibold mb-2">
                 Transaction ID <span className="text-red-500">*</span>
@@ -637,16 +632,16 @@ export default function BookingForm() {
                 type="text"
                 value={transactionId}
                 onChange={(e) => setTransactionId(e.target.value.toUpperCase())}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 bg-gray-100 cursor-not-allowed"
                 placeholder="Enter Transaction ID from your payment"
-                disabled={isSubmitting || isBookingClosed}
+                disabled={true}
               />
               <p className="text-xs text-gray-500 mt-1">
                 Transaction ID is shown in your payment app/bank statement
               </p>
             </div>
             
-            {/* Screenshot Upload */}
+            {/* Screenshot Upload - DISABLED */}
             <div className="mb-4">
               <label className="block text-gray-700 font-semibold mb-2">
                 Payment Screenshot <span className="text-red-500">*</span>
@@ -655,8 +650,8 @@ export default function BookingForm() {
                 type="file"
                 accept="image/*"
                 onChange={handleFileSelect}
-                disabled={isSubmitting || uploading || isBookingClosed}
-                className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100"
+                disabled={true}
+                className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-gray-100 file:text-gray-400 cursor-not-allowed"
               />
               <p className="text-xs text-gray-500 mt-1">
                 Upload screenshot showing Transaction ID and amount
@@ -691,17 +686,13 @@ export default function BookingForm() {
             </div>
           </div>
           
-          {/* SECTION 5: Submit Button */}
+          {/* SECTION 5: Submit Button - DISABLED */}
           <button
             type="submit"
-            disabled={!isFormValid() || isSubmitting || isBookingClosed}
-            className={`w-full py-4 text-lg font-bold rounded-lg transition-all ${
-              !isFormValid() || isSubmitting || isBookingClosed
-                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                : 'bg-gradient-to-r from-orange-600 to-red-600 text-white hover:shadow-lg transform hover:scale-[1.02] cursor-pointer'
-            }`}
+            disabled={true}
+            className="w-full py-4 text-lg font-bold rounded-lg bg-gray-300 text-gray-500 cursor-not-allowed"
           >
-            {isBookingClosed ? 'बुकिंग बंद झाले आहे' : isSubmitting ? 'Submitting Booking...' : 'Complete Booking & Submit 📝'}
+            बुकिंग बंद झाले आहे
           </button>
           
           <p className="text-center text-sm text-gray-500">

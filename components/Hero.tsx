@@ -4,8 +4,8 @@ import Image from 'next/image';
 import { useState, useEffect } from 'react';
 
 export default function Hero() {
-  const [timeRemaining, setTimeRemaining] = useState('');
-  const [isBookingClosed, setIsBookingClosed] = useState(false);
+  const [timeRemaining, setTimeRemaining] = useState('समाप्त');
+  const [isBookingClosed, setIsBookingClosed] = useState(true);
 
   const handleBookNow = () => {
     const bookingSection = document.getElementById('booking-form');
@@ -14,35 +14,11 @@ export default function Hero() {
     }
   };
 
-  // Timer logic
+  // Timer logic - FORCE CLOSED FOR TESTING
   useEffect(() => {
-    const checkBookingDeadline = () => {
-      const now = new Date();
-      const today = new Date(now);
-      today.setHours(23, 59, 0, 0); // 11:59 PM today
-      
-      const timeDiff = today.getTime() - now.getTime();
-      
-      if (timeDiff <= 0) {
-        setIsBookingClosed(true);
-        setTimeRemaining('समाप्त');
-        return;
-      }
-      
-      // Calculate hours, minutes, seconds remaining
-      const hours = Math.floor(timeDiff / (1000 * 60 * 60));
-      const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
-      const seconds = Math.floor((timeDiff % (1000 * 60)) / 1000);
-      
-      setTimeRemaining(`${hours} तास ${minutes} मिनिटे ${seconds} सेकंद`);
-    };
-    
-    checkBookingDeadline();
-    
-    // Update timer every second
-    const interval = setInterval(checkBookingDeadline, 1000);
-    
-    return () => clearInterval(interval);
+    // Force booking as closed for testing
+    setIsBookingClosed(true);
+    setTimeRemaining('समाप्त');
   }, []);
 
   return (
@@ -55,27 +31,16 @@ export default function Hero() {
 
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-20">
         
-        {/* Timer Banner - Below the main content */}
+        {/* Timer Banner - Shows Expired */}
         <div className="mb-8 text-center">
-          {isBookingClosed ? (
-            <div className="inline-block bg-red-100 border-2 border-red-500 rounded-xl px-8 py-4 shadow-lg">
-              <p className="text-red-700 font-bold text-xl marathi-text">
-                🙏 बुकिंग बंद झाले आहे
-              </p>
-              <p className="text-red-600 mt-1 text-sm">
-                गणपती बाप्पा मोरया! पुढच्या वर्षी भेटूया.
-              </p>
-            </div>
-          ) : (
-            <div className="inline-block bg-gradient-to-r from-orange-100 to-orange-200 border border-orange-300 rounded-xl px-8 py-4 shadow-md">
-              <p className="text-orange-700 font-semibold text-sm md:text-base">
-                ⏳ बुकिंग साठी उरलेला वेळ:
-              </p>
-              <p className="text-2xl md:text-3xl font-bold text-orange-600 mt-1 animate-pulse">
-                {timeRemaining}
-              </p>
-            </div>
-          )}
+          <div className="inline-block bg-red-100 border-2 border-red-500 rounded-xl px-8 py-4 shadow-lg">
+            <p className="text-red-700 font-bold text-xl marathi-text">
+              🙏 बुकिंग बंद झाले आहे
+            </p>
+            <p className="text-red-600 mt-1 text-sm">
+              गणपती बाप्पा मोरया! पुढच्या वर्षी भेटूया.
+            </p>
+          </div>
         </div>
 
         <div className="flex flex-col md:flex-row items-center justify-between gap-8 md:gap-12">
@@ -115,22 +80,18 @@ export default function Hero() {
               सर्व साईजमध्ये उपलब्ध (XS ते 5XL व बालके)
             </p>
             
-            {/* Book Now Button */}
+            {/* Book Now Button - Disabled */}
             <button
               onClick={handleBookNow}
-              disabled={isBookingClosed}
-              className={`text-white text-lg md:text-xl font-semibold px-8 py-3 rounded-full shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 ${
-                isBookingClosed 
-                  ? 'bg-gray-400 cursor-not-allowed' 
-                  : 'bg-gradient-to-r from-orange-600 to-red-600 hover:scale-105'
-              }`}
+              disabled={true}
+              className="bg-gray-400 cursor-not-allowed text-white text-lg md:text-xl font-semibold px-8 py-3 rounded-full shadow-lg"
             >
-              {isBookingClosed ? 'बुकिंग बंद' : 'आत्ताच बुक करा 🚀'}
+              बुकिंग बंद
             </button>
             
             {/* Small note */}
             <p className="text-sm text-gray-500 mt-4">
-              {isBookingClosed ? 'बुकिंग संपले. पुढच्या वर्षी भेटूया!' : 'मर्यादित संख्या • लवकर बुक करा'}
+              बुकिंग संपले. पुढच्या वर्षी भेटूया!
             </p>
           </div>
           
@@ -177,7 +138,7 @@ export default function Hero() {
           </div>
         </div>
 
-        {/* Developer Credit - ENLARGED and VISIBLE */}
+        {/* Developer Credit */}
         <div className="mt-12 text-center">
           <div className="inline-flex items-center gap-3 px-6 py-3 bg-white/70 backdrop-blur-sm rounded-full shadow-md border border-orange-200/60">
             <span className="text-base md:text-lg">🖥️</span>
